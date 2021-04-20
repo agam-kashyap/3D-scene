@@ -20,7 +20,7 @@ function init() {
 
 	// Scene Setup
 	scene = new THREE.Scene();
-	scene.background = new THREE.Color( 0xcccccc );
+	scene.background = new THREE.Color( 0x000000 );
 	scene.fog = new THREE.FogExp2( 0xcccccc, 0.002 );
 
 	// Set initial camera positions
@@ -43,14 +43,21 @@ function init() {
 
 	// world
 
+	const plane_geo = new THREE.PlaneGeometry(2000,2000);
+	let material = new THREE.MeshPhongMaterial( { color: 0x808080});
+	let plane = new THREE.Mesh(plane_geo, material)
+	plane.rotation.x = - Math.PI * 0.5;
+	plane.receiveShadow = true;
+	scene.add(plane);
+
 	const geometry = new THREE.CylinderGeometry( 0, 10, 150, 5, 1 );
-	const material = new THREE.MeshPhongMaterial( { color: 0xffffff, flatShading: true } );
+	material = new THREE.MeshPhongMaterial( { color: 0xffffff, flatShading: true } );
 
 	for ( let i = 0; i < 10; i ++ ) {
 
 		const mesh = new THREE.Mesh( geometry, material );
 		let x = Math.random() * 600 - 300;
-		let y = Math.random() * 600 - 300;
+		let z = Math.random() * 600 - 300;
 		const lamp_light = new THREE.PointLight(0xffff00, 1, 1000, 2);
 		const sphere = new THREE.SphereGeometry( 2.5, 16, 8 );
 		lamp_light.add( new THREE.Mesh( sphere, new THREE.MeshBasicMaterial( { color: 0xffff00 } ) ) );
@@ -58,7 +65,7 @@ function init() {
 		mesh.add(lamp_light);
 		mesh.position.x = x
 		mesh.position.y = 75;
-		mesh.position.z = y
+		mesh.position.z = z;
 		mesh.updateMatrix();
 		mesh.matrixAutoUpdate = false;
 		scene.add( mesh );
@@ -76,14 +83,14 @@ function init() {
 
 	const dirLight1 = new THREE.DirectionalLight( 0xff0fff );
 	dirLight1.position.set( 1, 1, 1 );
-	scene.add( dirLight1 );
+	// scene.add( dirLight1 );
 
 	const dirLight2 = new THREE.DirectionalLight( 0x002288 );
 	dirLight2.position.set( - 1, - 1, - 1 );
-	scene.add( dirLight2 );
+	// scene.add( dirLight2 );
 
 	const ambientLight = new THREE.AmbientLight( 0x222222 );
-	scene.add( ambientLight );
+	// scene.add( ambientLight );
 	//
 
 	window.addEventListener( 'resize', onWindowResize );
