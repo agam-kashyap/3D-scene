@@ -43,40 +43,67 @@ function init() {
 
 	// world
 
-	const plane_geo = new THREE.PlaneGeometry(2000,2000);
+	const plane_geo = new THREE.PlaneGeometry(20000,20000);
 	let material = new THREE.MeshPhongMaterial( { color: 0x808080});
 	let plane = new THREE.Mesh(plane_geo, material)
 	plane.rotation.x = - Math.PI * 0.5;
+	plane.position.y = -10
 	plane.receiveShadow = true;
 	scene.add(plane);
 
 	const geometry = new THREE.CylinderGeometry( 0, 10, 150, 5, 1 );
 	material = new THREE.MeshPhongMaterial( { color: 0xffffff, flatShading: true } );
 
-	for ( let i = 0; i < 10; i ++ ) {
+	// x+z = 200
+	// x+z = -200
+	// 
+	for ( let i = 0; i < 20; i ++ ) {
 
 		const mesh = new THREE.Mesh( geometry, material );
-		let x = Math.random() * 600 - 300;
-		let z = Math.random() * 600 - 300;
-		const lamp_light = new THREE.PointLight(0xffff00, 1, 1000, 2);
+		let x = -100 + i*100
+		let z = 200 - x;
+
+		let spotLight = new THREE.SpotLight( 0xffffff, 1 );
+		spotLight.position.y = 75;
+		spotLight.angle = Math.PI / 4;
+		spotLight.penumbra = 0.1;
+		spotLight.decay = 2;
+		spotLight.distance = 1200;
+		spotLight.intensity = 2;
+
+		spotLight.castShadow = true;
+		spotLight.shadow.mapSize.width = 512;
+		spotLight.shadow.mapSize.height = 512;
+		spotLight.shadow.camera.near = 10;
+		spotLight.shadow.camera.far = 200;
+		spotLight.shadow.focus = 1;
+
 		const sphere = new THREE.SphereGeometry( 2.5, 16, 8 );
-		lamp_light.add( new THREE.Mesh( sphere, new THREE.MeshBasicMaterial( { color: 0xffff00 } ) ) );
-		lamp_light.position.y = 75;
-		mesh.add(lamp_light);
+		spotLight.add(new THREE.Mesh(sphere, new THREE.MeshBasicMaterial( { color: 0xffffff })));
+		let target = new THREE.Object3D();
+		target.position.x = x+100;
+		target.position.z = z+100;
+		scene.add(target);
+		spotLight.target = target;
+		mesh.add(spotLight);
+
+
 		mesh.position.x = x
 		mesh.position.y = 75;
 		mesh.position.z = z;
 		mesh.updateMatrix();
 		mesh.matrixAutoUpdate = false;
+		mesh.castShadow = true;
 		scene.add( mesh );
-
 	}
 
 	const box = new THREE.BoxGeometry(60,60,60);
 	const box_material = new THREE.MeshPhongMaterial({color: 0x00ff00, flatShading: true});
 	const cube = new THREE.Mesh(box, box_material);
 	cube.position.y = 30;
+	cube.position.x = 500;
 	cube.updateMatrix();
+	cube.castShadow = true;
 	scene.add(cube);
 
 	// lights
@@ -89,9 +116,10 @@ function init() {
 	dirLight2.position.set( - 1, - 1, - 1 );
 	// scene.add( dirLight2 );
 
-	const ambientLight = new THREE.AmbientLight( 0x222222 );
-	// scene.add( ambientLight );
-	//
+	const ambient = new THREE.AmbientLight( 0xffffff, 0.1 );
+	scene.add( ambient );
+
+
 
 	window.addEventListener( 'resize', onWindowResize );
 
