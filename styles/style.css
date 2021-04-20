@@ -1,0 +1,9 @@
+body {
+    background-color: #f5f5f5;
+    overflow: hidden;
+    margin: 0;
+    font-family: monospace;
+    /* z-index: 100; */
+    font-size: 1.3em;
+    color: white;
+  }
