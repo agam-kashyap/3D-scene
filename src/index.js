@@ -95,14 +95,13 @@ function init() {
 			maxZ = pos[i];
 		}
 	}
-	for(let i =0; i< 30;i++)
+	for(let i =0; i< 300;i++)
 	{
 		let x = Math.floor(Math.random() * (maxX - minX) + minX);
 		let z = Math.floor(Math.random() * (maxZ - minZ) + minZ);
 		let y = Math.floor(Math.random() * 2000 + 200);
-		debugger;
-		const star = new THREE.SphereGeometry( 500, 16, 8 );
-		const starMesh = new THREE.Mesh(star, new THREE.MeshBasicMaterial( { color: 0x010110 }))
+		const star = new THREE.SphereGeometry( 50, 16, 8 );
+		const starMesh = new THREE.Mesh(star, new THREE.MeshBasicMaterial( { color: '#'+(Math.random() * 0xFFFFFF << 0).toString(16).padStart(6, '0') }))
 		starMesh.position.x = x;
 		starMesh.position.y = y;
 		starMesh.position.z = z;
