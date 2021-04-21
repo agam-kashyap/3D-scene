@@ -7,7 +7,7 @@ var controls, scene, renderer;
 let CAMERA_STRUCT = {
 	fp_camera : new THREE.PerspectiveCamera( 30, window.innerWidth / window.innerHeight, 0.1, 1000 ),
 	drone_camera : new THREE.PerspectiveCamera( 60, window.innerWidth / window.innerHeight, 0.1, 1000 ),
-	world_camera : new THREE.PerspectiveCamera( 60, window.innerWidth / window.innerHeight, 0.1, 1000 )
+	world_camera : new THREE.PerspectiveCamera( 60, window.innerWidth / window.innerHeight, 0.1, 10000 )
 };
 
 function init() {
@@ -20,8 +20,7 @@ function init() {
 
 	// Scene Setup
 	scene = new THREE.Scene();
-	scene.background = new THREE.Color( 0x000000 );
-	// scene.fog = new THREE.FogExp2( 0xcccccc, 0.001 );
+	scene.background = new THREE.Color( 0x210021 );
 
 	const loadingManager = new THREE.LoadingManager( () => {
 	
@@ -52,7 +51,7 @@ function init() {
 	controls.screenSpacePanning = false;
 
 	controls.minDistance = 100;
-	controls.maxDistance = 500;
+	controls.maxDistance = 1000;
 
 	controls.maxPolarAngle = Math.PI / 2.2;
 
@@ -65,6 +64,50 @@ function init() {
 	// plane.position.y = -10
 	plane.receiveShadow = true;
 	scene.add(plane);
+	console.log(plane.geometry.attributes);
+
+	let minX=Infinity, minY=Infinity, minZ=Infinity, maxX=-Infinity, maxY=-Infinity, maxZ=-Infinity;
+	let pos = plane.geometry.attributes.position.array;
+	for(let i=0; i< 12;i++)
+	{
+		if(pos[i] < minX)
+		{
+			minX = pos[i];
+		}
+		if(pos[i] > maxX)
+		{
+			maxX = pos[i];
+		}
+		if(pos[i] < minY)
+		{
+			minY = pos[i];
+		}
+		if(pos[i] > maxY)
+		{
+			maxY = pos[i];
+		}
+		if(pos[i] < minZ)
+		{
+			minZ = pos[i];
+		}
+		if(pos[i] > maxZ)
+		{
+			maxZ = pos[i];
+		}
+	}
+	for(let i =0; i< 30;i++)
+	{
+		let x = Math.floor(Math.random() * (maxX - minX) + minX);
+		let z = Math.floor(Math.random() * (maxZ - minZ) + minZ);
+		let y = Math.floor(Math.random() * 2000 + 200);
+		debugger;
+		const star = new THREE.SphereGeometry( 500, 16, 8 );
+		const starMesh = new THREE.Mesh(star, new THREE.MeshBasicMaterial( { color: 0x010110 }))
+		starMesh.position.x = x;
+		starMesh.position.y = y;
+		starMesh.position.z = z;
+		scene.add(starMesh);
+	}
 
 	const geometry = new THREE.CylinderGeometry( 0, 10, 150, 5, 1 );
 	material = new THREE.MeshPhongMaterial( { color: 0xffffff, flatShading: true } );
@@ -73,9 +116,9 @@ function init() {
 	// x+z = -200
 	// 
 	let objcnt=1;
-	for (let i = 0; i < 20; i ++ ) {
+	for (let i = 0; i < 50; i ++ ) {
 
-		let x = -300 + i*100
+		let x = -3000 + i*100
 		let z = 200 - x;
 
 		let object;
@@ -142,17 +185,11 @@ function init() {
 
 	// lights
 
-	const dirLight1 = new THREE.DirectionalLight( 0xff0fff );
-	dirLight1.position.set( 1, 1, 1 );
-	// scene.add( dirLight1 );
-
-	const dirLight2 = new THREE.DirectionalLight( 0x111111 );
-	// dirLight2.position.set( 0, 1, 1 );
-	dirLight2.position.y = 10;
-	dirLight2.position.x = 10;
-	dirLight2.position.z = 10;
-	
-	scene.add( dirLight2 );
+	const dirLight = new THREE.DirectionalLight( 0x210021 );
+	dirLight.position.y = 50;
+	dirLight.position.x = 50;
+	dirLight.position.z = 50;
+	scene.add( dirLight );
 
 	const ambient = new THREE.AmbientLight( 0xffffff, 0.1 );
 	scene.add( ambient );
