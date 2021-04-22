@@ -7,11 +7,11 @@ var controls, scene, renderer;
 var plane;
 var CAMERA_STRUCT = 
 {
-	world_camera : new THREE.PerspectiveCamera( 60, window.innerWidth / window.innerHeight, 0.1, 10000 ),	//CURRENT_VIEW = 1
-	fp_camera : new THREE.PerspectiveCamera( 30, window.innerWidth / window.innerHeight, 0.1, 1000 ), 		//CURRENT_VIEW = 2 
-	drone_camera : new THREE.PerspectiveCamera( 60, window.innerWidth / window.innerHeight, 0.1, 1000 ),	//CURRENT_VIEW = 3
+	world_camera : new THREE.PerspectiveCamera( 60, window.innerWidth / window.innerHeight, 0.1, 10000 ),	//CURRENT_VIEW = 0
+	fp_camera : new THREE.PerspectiveCamera( 30, window.innerWidth / window.innerHeight, 0.1, 1000 ), 		//CURRENT_VIEW = 1 
+	drone_camera : new THREE.PerspectiveCamera( 60, window.innerWidth / window.innerHeight, 0.1, 1000 ),	//CURRENT_VIEW = 2
 };
-var CURRENT_VIEW = 1; 
+var CURRENT_VIEW = 0; 
 
 //---------------------------------LOADING SCREEN--------------------------------------------
 
@@ -111,7 +111,7 @@ function init() {
 		{
 			let x = Math.floor(Math.random() * (maxX - minX) + minX);
 			let z = Math.floor(Math.random() * (maxZ - minZ) + minZ);
-			let y = Math.floor(Math.random() * 2000 + 200);
+			let y = Math.floor(Math.random() * 2000 + 1000);
 			const star = new THREE.SphereGeometry( 5, 16, 8 );
 			const starMesh = new THREE.Mesh(star, new THREE.MeshBasicMaterial( { color: '#'+(Math.random() * 0xFFFFFF << 0).toString(16).padStart(6, '0') }))
 			starMesh.position.x = x;
@@ -124,9 +124,9 @@ function init() {
 	//----------------------------STREET LAMPS-----------------------------------------
 	{
 		let objcnt=1;
-		for (let i = 0; i < 50; i ++ ) {
+		for (let i = 0; i < 25; i ++ ) {
 
-			let x = -3000 + i*100
+			let x = -3000 + i*200
 			let z = 200 - x;
 
 			let object;
@@ -148,8 +148,8 @@ function init() {
 				let spotLight = new THREE.SpotLight( 0xffe692, 1 );
 				spotLight.position.y = 1100;
 				spotLight.position.x = 450;
-				spotLight.angle = Math.PI / 6;
-				spotLight.penumbra = 0.2;
+				spotLight.angle = Math.PI / 5;
+				spotLight.penumbra = 0.5;
 				spotLight.decay = 2;
 				spotLight.distance = 1000;
 				spotLight.intensity = 1;
@@ -161,10 +161,12 @@ function init() {
 
 				const sphere = new THREE.SphereGeometry( 50, 16, 8 );
 				spotLight.add(new THREE.Mesh(sphere, new THREE.MeshBasicMaterial( { color: 0xffe692 })));
+				
 				let target = new THREE.Object3D();
 				target.position.x = -x+50;
 				target.position.z = -z+50;
 				scene.add(target);
+
 				spotLight.target = target;
 				object.children[0].add(spotLight);
 				scene.add( object );
@@ -180,9 +182,14 @@ function init() {
 		const box_material = new THREE.MeshPhongMaterial({color: 0xffffff, flatShading: true});
 		const cube = new THREE.Mesh(box, box_material);
 		cube.position.y = 30;
-		cube.position.x = 0;
+		// cube.position.x = 0;
 		cube.updateMatrix();
 		cube.add(CAMERA_STRUCT.fp_camera); // Making the first person camera Player's children, to facilitate same movement
+		CAMERA_STRUCT.drone_camera.position.y = cube.position.y + 200;
+		CAMERA_STRUCT.drone_camera.position.x = cube.position.x - 200;
+		CAMERA_STRUCT.drone_camera.position.z = cube.position.z - 200; 
+		CAMERA_STRUCT.drone_camera.lookAt(cube.position.x, cube.position.y, cube.position.z); //Order of calling position, lookat relatively, matters
+		cube.add(CAMERA_STRUCT.drone_camera); //Making the drone Player's children, so that it can move along with the player
 		scene.add(cube);
 	}
 	
@@ -198,6 +205,14 @@ function init() {
 
 	//---------------------------------------ENABLE RESIZE--------------------------------------
 	window.addEventListener( 'resize', onWindowResize );
+
+	//----------------------------------------HELPERS-------------------------------------------
+	const helper_drone = new THREE.CameraHelper( CAMERA_STRUCT.drone_camera );
+	// scene.add(helper_drone);
+	const helper_fp = new THREE.CameraHelper( CAMERA_STRUCT.fp_camera );
+	// scene.add(helper_fp);
+	const helper_world = new THREE.CameraHelper( CAMERA_STRUCT.world_camera );
+	// scene.add(helper_world);
 }
 //-------------------------------------------------------------------------------------------------------------------------
 
@@ -206,6 +221,8 @@ window.addEventListener("keydown", (ev) => {
 	if(ev.key == 'v')
 	{
 		console.log("v");
+		CURRENT_VIEW += 1;
+		CURRENT_VIEW %= 3;
 	}
 	if(ev.key == "ArrowUp")
 	{
@@ -236,13 +253,26 @@ function onTransitionEnd( event )
 function animate() {
 
 	requestAnimationFrame( animate );
+	if(CURRENT_VIEW != 0)
+	{
+		controls.enabled = false;
+		render();
+	}
+	else
+	{
+		controls.enabled = true;
+		render();
+	}
 	controls.update();
-	render();
-
 }
 function render() 
 {
-	renderer.render( scene, CAMERA_STRUCT.world_camera );
+	if(CURRENT_VIEW == 0)
+		renderer.render( scene, CAMERA_STRUCT.world_camera );
+	else if(CURRENT_VIEW == 1)
+		renderer.render(scene, CAMERA_STRUCT.fp_camera);
+	else
+		renderer.render(scene, CAMERA_STRUCT.drone_camera);
 }
 //------------------------------------------
 
