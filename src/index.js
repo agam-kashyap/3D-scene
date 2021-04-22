@@ -37,6 +37,8 @@ Scene
 |		|-Sphere
 |		|-PointLight
 |- Player
+|	|-drone camera
+|	|-first person camera
 */
 
 function init() {
