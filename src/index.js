@@ -1,18 +1,21 @@
 import * as THREE from 'https://unpkg.com/three@0.127.0/build/three.module.js';
 import { OrbitControls } from 'https://unpkg.com/three@0.127.0/examples/jsm/controls/OrbitControls.js'
 import { OBJLoader } from 'https://unpkg.com/three@0.127.0/examples/jsm/loaders/OBJLoader.js';
-
+import Stats from 'https://unpkg.com/three@0.127.0/examples/jsm/libs/stats.module.js';
+import { FirstPersonControls } from './World/Components/Controls/FirstPersonControls.js'
 //------------------------GLOBAL VARIABLES-------------------------------------
-var controls, scene, renderer;
+var world_controls, fp_controls, drone_controls; 
+var scene, renderer, stats;
 var plane;
 var CAMERA_STRUCT = 
 {
 	world_camera : new THREE.PerspectiveCamera( 60, window.innerWidth / window.innerHeight, 0.1, 10000 ),	//CURRENT_VIEW = 0
-	fp_camera : new THREE.PerspectiveCamera( 30, window.innerWidth / window.innerHeight, 0.1, 1000 ), 		//CURRENT_VIEW = 1 
-	drone_camera : new THREE.PerspectiveCamera( 60, window.innerWidth / window.innerHeight, 0.1, 1000 ),	//CURRENT_VIEW = 2
+	fp_camera : new THREE.PerspectiveCamera( 30, window.innerWidth / window.innerHeight, 0.1, 10000 ), 		//CURRENT_VIEW = 1 
+	drone_camera : new THREE.PerspectiveCamera( 60, window.innerWidth / window.innerHeight, 0.1, 10000 ),	//CURRENT_VIEW = 2
 };
 var CURRENT_VIEW = 0; 
 
+const clock = new THREE.Clock();
 //---------------------------------LOADING SCREEN--------------------------------------------
 
 const loadingManager = new THREE.LoadingManager( () => 
@@ -49,6 +52,8 @@ function init() {
 		renderer.setPixelRatio( window.devicePixelRatio );
 		renderer.setSize( window.innerWidth, window.innerHeight );
 		document.body.appendChild( renderer.domElement );
+		stats = new Stats();
+		document.body.appendChild( stats.dom );
 	}
 
 	//---------------------------------CREATING MAIN SCENE--------------------------------
@@ -58,14 +63,20 @@ function init() {
 	//----------------------------WORLD CAMERA CONTROLS----------------------------------
 	{
 		CAMERA_STRUCT.world_camera.position.set( 100, 1000, 1000 );
-		controls = new OrbitControls( CAMERA_STRUCT.world_camera, renderer.domElement );
-		controls.listenToKeyEvents( window ); 
-		controls.enableDamping = true; // an animation loop is required when either damping or auto-rotation are enabled
-		controls.dampingFactor = 0.05;
-		controls.screenSpacePanning = false;
-		controls.minDistance = 100;
-		controls.maxDistance = 1000;
-		controls.maxPolarAngle = Math.PI / 2.2;
+		world_controls = new OrbitControls( CAMERA_STRUCT.world_camera, renderer.domElement );
+		world_controls.listenToKeyEvents( window ); 
+		world_controls.enableDamping = true; // an animation loop is required when either damping or auto-rotation are enabled
+		world_controls.dampingFactor = 0.05;
+		world_controls.screenSpacePanning = false;
+		world_controls.minDistance = 100;
+		world_controls.maxDistance = 1000;
+		world_controls.maxPolarAngle = Math.PI / 2.2;
+		world_controls.keys = {
+			LEFT: 'Numpad4', //left arrow
+			UP: 'Numpad8', // up arrow
+			RIGHT: 'Numpad6', // right arrow
+			BOTTOM: 'Numpad2' // down arrow
+		}
 	}
 
 	//--------------------PLANE---------------------------------------
@@ -126,7 +137,7 @@ function init() {
 	//----------------------------STREET LAMPS-----------------------------------------
 	{
 		let objcnt=1;
-		for (let i = 0; i < 25; i ++ ) {
+		for (let i = 0; i < 30; i ++ ) {
 
 			let x = -3000 + i*200
 			let z = 200 - x;
@@ -183,9 +194,10 @@ function init() {
 		const box = new THREE.BoxGeometry(60,60,60);
 		const box_material = new THREE.MeshPhongMaterial({color: 0xffffff, flatShading: true});
 		const cube = new THREE.Mesh(box, box_material);
+		cube.name = "player1"
 		cube.position.y = 30;
-		// cube.position.x = 0;
 		cube.updateMatrix();
+
 		cube.add(CAMERA_STRUCT.fp_camera); // Making the first person camera Player's children, to facilitate same movement
 		CAMERA_STRUCT.drone_camera.position.y = cube.position.y + 200;
 		CAMERA_STRUCT.drone_camera.position.x = cube.position.x - 200;
@@ -195,6 +207,14 @@ function init() {
 		scene.add(cube);
 	}
 	
+	//---------------------------------------PLAYER CONTROLS-------------------------------------
+	{
+		fp_controls = new FirstPersonControls(scene.getObjectByName("player1"), renderer.domElement);
+		fp_controls.lookVertical = false; //Work on Keeping movement restricted to ground
+		fp_controls.movementSpeed = 150;
+		fp_controls.lookSpeed = 0.1;
+		fp_controls.activeLook = false;
+	}
 	//---------------------------------------SCENE LIGHT-----------------------------------------
 	{
 		const dirLight = new THREE.DirectionalLight( 0x210021 ); //Simulating night scene for now
@@ -212,7 +232,7 @@ function init() {
 	const helper_drone = new THREE.CameraHelper( CAMERA_STRUCT.drone_camera );
 	// scene.add(helper_drone);
 	const helper_fp = new THREE.CameraHelper( CAMERA_STRUCT.fp_camera );
-	// scene.add(helper_fp);
+	scene.add(helper_fp);
 	const helper_world = new THREE.CameraHelper( CAMERA_STRUCT.world_camera );
 	// scene.add(helper_world);
 }
@@ -222,14 +242,29 @@ function init() {
 window.addEventListener("keydown", (ev) => {
 	if(ev.key == 'v')
 	{
-		console.log("v");
 		CURRENT_VIEW += 1;
 		CURRENT_VIEW %= 3;
 	}
-	if(ev.key == "ArrowUp")
-	{
-		
-	}
+	// if(ev.key == "ArrowUp")
+	// {
+	// 	scene.getObjectByName("player1").position.x += 1;
+	// 	scene.getObjectByName("player1").updateMatrix();
+	// }
+	// if(ev.key == "ArrowDown")
+	// {
+	// 	scene.getObjectByName("player1").position.x -= 1;
+	// 	scene.getObjectByName("player1").updateMatrix();
+	// }
+	// if(ev.key == "ArrowLeft")
+	// {
+	// 	scene.getObjectByName("player1").position.z -= 1;
+	// 	scene.getObjectByName("player1").updateMatrix();
+	// }
+	// if(ev.key == "ArrowRight")
+	// {
+	// 	scene.getObjectByName("player1").position.z += 1;
+	// 	scene.getObjectByName("player1").updateMatrix();
+	// }
 });
 //------------------------------------------------------------------------------------------------------------------------
 
@@ -252,20 +287,30 @@ function onTransitionEnd( event )
 //------------------------------------------
 
 //---------------Animation Loop-------------
-function animate() {
-
+function animate() 
+{
 	requestAnimationFrame( animate );
-	if(CURRENT_VIEW != 0)
+	if(CURRENT_VIEW == 0)
 	{
-		controls.enabled = false;
+		world_controls.enabled = true;
+		fp_controls.enabled = false;
+		render();
+	}
+	else if(CURRENT_VIEW == 1)
+	{
+		world_controls.enabled = false;
+		fp_controls.enabled = true;
 		render();
 	}
 	else
 	{
-		controls.enabled = true;
+		world_controls.enabled = false;
+		fp_controls.enabled = false;
 		render();
 	}
-	controls.update();
+	fp_controls.update(clock.getDelta());
+	world_controls.update(clock.getDelta());
+	stats.update(clock.getDelta());
 }
 function render() 
 {
