@@ -209,8 +209,8 @@ function init() {
 	
 	//---------------------------------------PLAYER CONTROLS-------------------------------------
 	{
-		fp_controls = new FirstPersonControls(scene.getObjectByName("player1"), renderer.domElement);
-		fp_controls.lookVertical = false; //Work on Keeping movement restricted to ground
+		fp_controls = new FirstPersonControls(scene.getObjectByName("player1"), CAMERA_STRUCT.fp_camera, renderer.domElement);
+		fp_controls.lookVertical = true; //Work on Keeping movement restricted to ground
 		fp_controls.movementSpeed = 150;
 		fp_controls.lookSpeed = 0.1;
 		fp_controls.activeLook = false;
@@ -232,7 +232,7 @@ function init() {
 	const helper_drone = new THREE.CameraHelper( CAMERA_STRUCT.drone_camera );
 	// scene.add(helper_drone);
 	const helper_fp = new THREE.CameraHelper( CAMERA_STRUCT.fp_camera );
-	scene.add(helper_fp);
+	// scene.add(helper_fp);
 	const helper_world = new THREE.CameraHelper( CAMERA_STRUCT.world_camera );
 	// scene.add(helper_world);
 }

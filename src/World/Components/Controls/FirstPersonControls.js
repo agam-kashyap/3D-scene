@@ -10,7 +10,7 @@ const _target = new Vector3();
 
 class FirstPersonControls {
 
-	constructor( object, domElement ) {
+	constructor( object, camera, domElement ) {
 
 		if ( domElement === undefined ) {
 
@@ -20,6 +20,7 @@ class FirstPersonControls {
 		}
 
 		this.object = object;
+		this.camera = camera;
 		this.domElement = domElement;
 
 		// API
@@ -62,8 +63,10 @@ class FirstPersonControls {
 
 		// private variables
 
-		let lat = 0;
-		let lon = 0;
+		let obj_lat = 0;
+		let obj_lon = 0;
+		let cam_lat = 0;
+		let cam_lon = 0;
 
 		//
 
@@ -212,7 +215,8 @@ class FirstPersonControls {
 
 		this.update = function () {
 
-			const targetPosition = new Vector3();
+			const ObjTargetPosition = new Vector3();
+			const CameraTargetPosition = new Vector3();
 
 			return function update( delta ) {
 
@@ -258,21 +262,15 @@ class FirstPersonControls {
 
 				}
 
-				if(! this.activeLook)
-				{
-					lon = -this.mouseX * actualLookSpeed;
-					if ( this.lookVertical ) lat = -this.mouseY * actualLookSpeed * verticalLookRatio;
-				}
-				else
-				{
-					lon -= this.mouseX * actualLookSpeed;
-					if ( this.lookVertical ) lat -= this.mouseY * actualLookSpeed * verticalLookRatio;
-				}
+				obj_lon = -this.mouseX * actualLookSpeed;
+				if ( this.lookVertical ) cam_lat = -this.mouseY * actualLookSpeed * verticalLookRatio;
 				
-				lat = Math.max( - 85, Math.min( 85, lat ) );
+				
+				// obj_lat = Math.max( - 85, Math.min( 85, obj_lat ) );
+				obj_lat = 0;
 
-				let phi = MathUtils.degToRad( 90 - lat );
-				const theta = MathUtils.degToRad( lon );
+				let phi = MathUtils.degToRad( 90 - obj_lat );
+				const theta = MathUtils.degToRad( obj_lon );
 
 				if ( this.constrainVertical ) {
 
@@ -282,10 +280,24 @@ class FirstPersonControls {
 
 				const position = this.object.position;
 
-				targetPosition.setFromSphericalCoords( 1, phi, theta ).add( position );
+				ObjTargetPosition.setFromSphericalCoords( 1, phi, theta ).add( position );
 
-				this.object.lookAt( targetPosition );
+				this.object.lookAt( ObjTargetPosition );
 
+				//--------------CAMERA ORIENTATION-----------------------
+				cam_lon = obj_lon;
+				cam_lat = Math.max( -85, Math.min( 85, cam_lat ) );
+				let cam_phi = MathUtils.degToRad( 240 + cam_lat );
+				const cam_theta = MathUtils.degToRad( cam_lon );
+
+				if ( true) {
+
+					cam_phi = MathUtils.mapLinear( cam_phi, 0,Math.PI, this.verticalMin, this.verticalMax );
+
+				}
+
+				CameraTargetPosition.setFromSphericalCoords( 1, cam_phi, cam_theta ).add( position );
+				this.camera.lookAt(CameraTargetPosition);
 			};
 
 		}();
@@ -303,15 +315,11 @@ class FirstPersonControls {
 		};
 
 		const _onMouseMove = this.onMouseMove.bind( this );
-		// const _onMouseDown = this.onMouseDown.bind( this );
-		// const _onMouseUp = this.onMouseUp.bind( this );
 		const _onKeyDown = this.onKeyDown.bind( this );
 		const _onKeyUp = this.onKeyUp.bind( this );
 
 		this.domElement.addEventListener( 'contextmenu', contextmenu );
 		this.domElement.addEventListener( 'mousemove', _onMouseMove );
-		// this.domElement.addEventListener( 'mousedown', _onMouseDown );
-		// this.domElement.addEventListener( 'mouseup', _onMouseUp );
 
 		window.addEventListener( 'keydown', _onKeyDown );
 		window.addEventListener( 'keyup', _onKeyUp );
@@ -323,8 +331,8 @@ class FirstPersonControls {
 			_lookDirection.set( -1, 0, - 1 ).applyQuaternion( quaternion );
 			_spherical.setFromVector3( _lookDirection );
 
-			lat = 90 - MathUtils.radToDeg( _spherical.phi );
-			lon = MathUtils.radToDeg( _spherical.theta );
+			obj_lat = 90 - MathUtils.radToDeg( _spherical.phi );
+			obj_lon = MathUtils.radToDeg( _spherical.theta );
 
 		}
 
