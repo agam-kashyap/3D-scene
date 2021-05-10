@@ -120,7 +120,7 @@ function init() {
 				maxZ = pos[i];
 			}
 		}
-		for(let i =0; i< 300;i++)
+		for(let i =0; i< 3;i++)
 		{
 			let x = Math.floor(Math.random() * (maxX - minX) + minX);
 			let z = Math.floor(Math.random() * (maxZ - minZ) + minZ);
@@ -137,9 +137,10 @@ function init() {
 	//----------------------------STREET LAMPS-----------------------------------------
 	{
 		let objcnt=1;
-		for (let i = 0; i < 30; i ++ ) {
+		for (let i = 0; i < 3; i ++ ) {
 
-			let x = -3000 + i*200
+			// let x = -3000 + i*200
+			let x = -30 + i*200
 			let z = 200 - x;
 
 			let object;
@@ -232,7 +233,7 @@ function init() {
 	const helper_drone = new THREE.CameraHelper( CAMERA_STRUCT.drone_camera );
 	// scene.add(helper_drone);
 	const helper_fp = new THREE.CameraHelper( CAMERA_STRUCT.fp_camera );
-	// scene.add(helper_fp);
+	scene.add(helper_fp);
 	const helper_world = new THREE.CameraHelper( CAMERA_STRUCT.world_camera );
 	// scene.add(helper_world);
 }

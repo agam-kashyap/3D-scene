@@ -270,6 +270,7 @@ class FirstPersonControls {
 				obj_lat = 0;
 
 				let phi = MathUtils.degToRad( 90 - obj_lat );
+				obj_lon = Math.max( -90, Math.min( 90, obj_lon ) );
 				const theta = MathUtils.degToRad( obj_lon );
 
 				if ( this.constrainVertical ) {
@@ -286,8 +287,8 @@ class FirstPersonControls {
 
 				//--------------CAMERA ORIENTATION-----------------------
 				cam_lon = obj_lon;
-				cam_lat = Math.max( -85, Math.min( 85, cam_lat ) );
-				let cam_phi = MathUtils.degToRad( 240 + cam_lat );
+				cam_lat = Math.max( -90, Math.min( 0, cam_lat ) );
+				let cam_phi = MathUtils.degToRad( cam_lat - 45);
 				const cam_theta = MathUtils.degToRad( cam_lon );
 
 				if ( true) {
