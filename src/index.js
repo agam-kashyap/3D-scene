@@ -2,7 +2,8 @@ import * as THREE from 'https://unpkg.com/three@0.127.0/build/three.module.js';
 import { OrbitControls } from 'https://unpkg.com/three@0.127.0/examples/jsm/controls/OrbitControls.js'
 import { OBJLoader } from 'https://unpkg.com/three@0.127.0/examples/jsm/loaders/OBJLoader.js';
 import Stats from 'https://unpkg.com/three@0.127.0/examples/jsm/libs/stats.module.js';
-import { FirstPersonControls } from './World/Components/Controls/FirstPersonControls.js'
+import { FirstPersonControls } from './World/Components/Controls/FirstPersonControls.js';
+import { ThirdPersonControls } from './World/Components/Controls/ThirdPersonControls.js';
 //------------------------GLOBAL VARIABLES-------------------------------------
 var world_controls, fp_controls, drone_controls; 
 var scene, renderer, stats;
@@ -46,6 +47,7 @@ Scene
 
 function init() {
 
+	console.log("Hello");
 	//---------------------------------SCREEN SETUP---------------------------------------
 	{
 		renderer = new THREE.WebGLRenderer( { antialias: true } );
@@ -197,24 +199,30 @@ function init() {
 		const cube = new THREE.Mesh(box, box_material);
 		cube.name = "player1"
 		cube.position.y = 30;
+		cube.lookAt(0,0,-200);
 		cube.updateMatrix();
 
 		cube.add(CAMERA_STRUCT.fp_camera); // Making the first person camera Player's children, to facilitate same movement
 		CAMERA_STRUCT.drone_camera.position.y = cube.position.y + 200;
-		CAMERA_STRUCT.drone_camera.position.x = cube.position.x - 200;
-		CAMERA_STRUCT.drone_camera.position.z = cube.position.z - 200; 
+		CAMERA_STRUCT.drone_camera.position.z = cube.position.z + 200; 
 		CAMERA_STRUCT.drone_camera.lookAt(cube.position.x, cube.position.y, cube.position.z); //Order of calling position, lookat relatively, matters
-		cube.add(CAMERA_STRUCT.drone_camera); //Making the drone Player's children, so that it can move along with the player
+		scene.add(CAMERA_STRUCT.drone_camera); //Making the drone Player's children, so that it can move along with the player
 		scene.add(cube);
 	}
 	
 	//---------------------------------------PLAYER CONTROLS-------------------------------------
 	{
 		fp_controls = new FirstPersonControls(scene.getObjectByName("player1"), CAMERA_STRUCT.fp_camera, renderer.domElement);
-		fp_controls.lookVertical = true; //Work on Keeping movement restricted to ground
+		fp_controls.lookVertical = true; 
 		fp_controls.movementSpeed = 150;
 		fp_controls.lookSpeed = 0.1;
 		fp_controls.activeLook = false;
+
+		drone_controls = new ThirdPersonControls(scene.getObjectByName("player1"), CAMERA_STRUCT.drone_camera, renderer.domElement);
+		// drone_controls.lookVertical = true; 
+		// drone_controls.movementSpeed = 150;
+		// drone_controls.lookSpeed = 0.1;
+		// drone_controls.activeLook = false;
 	}
 	//---------------------------------------SCENE LIGHT-----------------------------------------
 	{
@@ -231,11 +239,16 @@ function init() {
 
 	//----------------------------------------HELPERS-------------------------------------------
 	const helper_drone = new THREE.CameraHelper( CAMERA_STRUCT.drone_camera );
-	// scene.add(helper_drone);
+	scene.add(helper_drone);
 	const helper_fp = new THREE.CameraHelper( CAMERA_STRUCT.fp_camera );
 	scene.add(helper_fp);
 	const helper_world = new THREE.CameraHelper( CAMERA_STRUCT.world_camera );
 	// scene.add(helper_world);
+	const size = 1000;
+	const divisions = 10;
+
+	const gridHelper = new THREE.GridHelper( size, divisions, 0xffffff, 0xcccccc );
+	// scene.add( gridHelper );
 }
 //-------------------------------------------------------------------------------------------------------------------------
 
@@ -246,26 +259,6 @@ window.addEventListener("keydown", (ev) => {
 		CURRENT_VIEW += 1;
 		CURRENT_VIEW %= 3;
 	}
-	// if(ev.key == "ArrowUp")
-	// {
-	// 	scene.getObjectByName("player1").position.x += 1;
-	// 	scene.getObjectByName("player1").updateMatrix();
-	// }
-	// if(ev.key == "ArrowDown")
-	// {
-	// 	scene.getObjectByName("player1").position.x -= 1;
-	// 	scene.getObjectByName("player1").updateMatrix();
-	// }
-	// if(ev.key == "ArrowLeft")
-	// {
-	// 	scene.getObjectByName("player1").position.z -= 1;
-	// 	scene.getObjectByName("player1").updateMatrix();
-	// }
-	// if(ev.key == "ArrowRight")
-	// {
-	// 	scene.getObjectByName("player1").position.z += 1;
-	// 	scene.getObjectByName("player1").updateMatrix();
-	// }
 });
 //------------------------------------------------------------------------------------------------------------------------
 
@@ -295,21 +288,25 @@ function animate()
 	{
 		world_controls.enabled = true;
 		fp_controls.enabled = false;
+		drone_controls.enabled = false;
 		render();
 	}
 	else if(CURRENT_VIEW == 1)
 	{
 		world_controls.enabled = false;
 		fp_controls.enabled = true;
+		drone_controls.enabled = false;
 		render();
 	}
 	else
 	{
 		world_controls.enabled = false;
 		fp_controls.enabled = false;
+		drone_controls.enabled = true;
 		render();
 	}
 	fp_controls.update(clock.getDelta());
+	drone_controls.update(clock.getDelta());
 	world_controls.update(clock.getDelta());
 	stats.update(clock.getDelta());
 }

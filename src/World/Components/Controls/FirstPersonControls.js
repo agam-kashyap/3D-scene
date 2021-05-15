@@ -222,21 +222,20 @@ class FirstPersonControls {
 
 				if ( this.enabled === false ) return;
 
-				if ( this.heightSpeed ) {
+				// if ( this.heightSpeed ) {
 
-					const y = MathUtils.clamp( this.object.position.y, this.heightMin, this.heightMax );
-					const heightDelta = y - this.heightMin;
+				// 	const y = MathUtils.clamp( this.object.position.y, this.heightMin, this.heightMax );
+				// 	const heightDelta = y - this.heightMin;
 
-					this.autoSpeedFactor = delta * ( heightDelta * this.heightCoef );
+				// 	this.autoSpeedFactor = delta * ( heightDelta * this.heightCoef );
 
-				} else {
+				// } else {
 
 					this.autoSpeedFactor = 0.0;
 
-				}
+				// }
 
 				const actualMoveSpeed = delta * this.movementSpeed;
-
 				if ( this.moveForward || ( this.autoForward && ! this.moveBackward ) ) this.object.translateZ( - ( actualMoveSpeed + this.autoSpeedFactor ) );
 				if ( this.moveBackward ) this.object.translateZ( actualMoveSpeed );
 
