@@ -5,9 +5,15 @@ import Stats from 'https://unpkg.com/three@0.127.0/examples/jsm/libs/stats.modul
 import { FirstPersonControls } from './World/Components/Controls/FirstPersonControls.js';
 import { ThirdPersonControls } from './World/Components/Controls/ThirdPersonControls.js';
 //------------------------GLOBAL VARIABLES-------------------------------------
-var world_controls, fp_controls, drone_controls; 
-var scene, renderer, stats;
-var plane;
+var world_controls, 
+	fp_controls, 
+	drone_controls,
+	scene, 
+	renderer, 
+	stats,
+	scenery, 
+	scenery_loaded = false;
+	
 var CAMERA_STRUCT = 
 {
 	world_camera : new THREE.PerspectiveCamera( 60, window.innerWidth / window.innerHeight, 0.1, 10000 ),	//CURRENT_VIEW = 0
@@ -17,16 +23,8 @@ var CAMERA_STRUCT =
 var CURRENT_VIEW = 0; 
 
 const clock = new THREE.Clock();
-//---------------------------------LOADING SCREEN--------------------------------------------
 
-const loadingManager = new THREE.LoadingManager( () => 
-{
-	const loadingScreen = document.getElementById( 'loading-screen' );
-	loadingScreen.classList.add( 'fade-out' );
-	loadingScreen.addEventListener( 'transitionend', onTransitionEnd );		
-});
-const loader = new OBJLoader(loadingManager);
-
+var base_position
 /*
 init() used to setup all the assets of the scene,  setup controls, cameras and textures.
 Provides a loading manager, shown during loading of all assets
@@ -34,7 +32,6 @@ Current scene graph:
 Scene
 |- dirLight
 |- Ambient light
-|- stars(300)
 |- Plane
 |- Lamps(50)
 |	|-SpotLight
@@ -45,9 +42,19 @@ Scene
 |	|-first person camera
 */
 
+//-------------------------------LOADING SCREEN--------------------------------------------
+
+const loadingManager = new THREE.LoadingManager( () => 
+{
+	const loadingScreen = document.getElementById( 'loading-screen' );
+	loadingScreen.classList.add( 'fade-out' );
+	loadingScreen.addEventListener( 'transitionend', onTransitionEnd );		
+});
+const loader = new OBJLoader(loadingManager);
+
+//---------------------------------INIT BEGINS---------------------------------------------
 function init() {
 
-	console.log("Hello");
 	//---------------------------------SCREEN SETUP---------------------------------------
 	{
 		renderer = new THREE.WebGLRenderer( { antialias: true } );
@@ -64,7 +71,7 @@ function init() {
 
 	//----------------------------WORLD CAMERA CONTROLS----------------------------------
 	{
-		CAMERA_STRUCT.world_camera.position.set( 100, 1000, 1000 );
+		CAMERA_STRUCT.world_camera.position.set( -1000, 1000, 0 );
 		world_controls = new OrbitControls( CAMERA_STRUCT.world_camera, renderer.domElement );
 		world_controls.listenToKeyEvents( window ); 
 		world_controls.enableDamping = true; // an animation loop is required when either damping or auto-rotation are enabled
@@ -83,18 +90,18 @@ function init() {
 
 	//--------------------PLANE---------------------------------------
 	{
-		const plane_geo = new THREE.PlaneGeometry(20000,20000);
-		let material = new THREE.MeshPhongMaterial( { color: 0x808080});
-		plane = new THREE.Mesh(plane_geo, material)
-		plane.rotation.x = - Math.PI * 0.5;
-		plane.name = "Plane";
-		scene.add(plane);
+		loader.load( '../assets/mesh/scene/scene.obj', function ( obj ) {
+			scenery = obj;
+			scene.add(scenery)
+			scenery_loaded = true;
+		});
 	}
 
 	//---------------------STARS random generation--------------------
+	if(scenery_loaded)
 	{
 		let minX=Infinity, minY=Infinity, minZ=Infinity, maxX=-Infinity, maxY=-Infinity, maxZ=-Infinity;
-		let pos = plane.geometry.attributes.position.array;
+		let pos = scenery.geometry.attributes.position.array; // replaced plane by scenery
 		for(let i=0; i< 12;i++)
 		{
 			if(pos[i] < minX)
@@ -139,56 +146,54 @@ function init() {
 	//----------------------------STREET LAMPS-----------------------------------------
 	{
 		let objcnt=1;
-		for (let i = 0; i < 3; i ++ ) {
+		for(let j = 1; j>-2; j=j-2)
+		{
+			for (let i = 0; i < 10; i ++ ) {
 
-			// let x = -3000 + i*200
-			let x = -30 + i*200
-			let z = 200 - x;
+				let x = -1000 + i*200
+				let z = -200*j;
+				let object;
+				loader.load( '../assets/mesh/street-lamp-1/street-lamp.obj', function ( obj ) {
 
-			let object;
-			loader.load( '../assets/mesh/street-lamp-1/street-lamp.obj', function ( obj ) {
+					object = obj;
+					
+					object.scale.multiplyScalar( 0.1 );
+					object.position.x = x
+					object.position.y = 50;
+					object.position.z = z;
+					object.rotation.y = -Math.PI/2*j;
+					object.updateMatrix();
+					object.matrixAutoUpdate = false;
 
-				object = obj;
-				
-				object.scale.multiplyScalar( 0.1 );
-				object.position.x = -x
-				object.position.y = 50;
-				object.position.z = -z;
-				object.rotation.y = -Math.PI/4;
-				object.updateMatrix();
-				object.matrixAutoUpdate = false;
+					let name = "Lamp ".concat(objcnt);
+					object.name = name;
 
-				let name = "Lamp ".concat(objcnt);
-				object.name = name;
+					let spotLight = new THREE.SpotLight( 0xffe692, 1 );
+					spotLight.position.y = 1100;
+					spotLight.position.x = 450;
+					spotLight.angle = Math.PI/7 ;
+					spotLight.penumbra = 0.5;
+					spotLight.decay = 2;
+					spotLight.distance = 1000;
+					spotLight.intensity = 1;
 
-				let spotLight = new THREE.SpotLight( 0xffe692, 1 );
-				spotLight.position.y = 1100;
-				spotLight.position.x = 450;
-				spotLight.angle = Math.PI / 5;
-				spotLight.penumbra = 0.5;
-				spotLight.decay = 2;
-				spotLight.distance = 1000;
-				spotLight.intensity = 1;
+					spotLight.name = "Light".concat(toString(objcnt));
 
-				spotLight.name = "Light".concat(toString(objcnt));
+					const sphere = new THREE.SphereGeometry( 50, 16, 8 );
+					spotLight.add(new THREE.Mesh(sphere, new THREE.MeshBasicMaterial( { color: 0xffe692 })));
+					
+					let target = new THREE.Object3D();
+					target.position.x = x;
+					target.position.z = -100*j;
+					scene.add(target);
 
-				let pointLight =  new THREE.PointLight( 0xffe692, 2, 100 );
-				spotLight.add(pointLight);
+					spotLight.target = target;
+					object.children[0].add(spotLight);
+					scene.add( object );
 
-				const sphere = new THREE.SphereGeometry( 50, 16, 8 );
-				spotLight.add(new THREE.Mesh(sphere, new THREE.MeshBasicMaterial( { color: 0xffe692 })));
-				
-				let target = new THREE.Object3D();
-				target.position.x = -x+50;
-				target.position.z = -z+50;
-				scene.add(target);
-
-				spotLight.target = target;
-				object.children[0].add(spotLight);
-				scene.add( object );
-
-				objcnt+=1;
-			});
+					objcnt+=1;
+				});
+			}
 		}
 	}
 
@@ -239,9 +244,9 @@ function init() {
 
 	//----------------------------------------HELPERS-------------------------------------------
 	const helper_drone = new THREE.CameraHelper( CAMERA_STRUCT.drone_camera );
-	scene.add(helper_drone);
+	// scene.add(helper_drone);
 	const helper_fp = new THREE.CameraHelper( CAMERA_STRUCT.fp_camera );
-	scene.add(helper_fp);
+	// scene.add(helper_fp);
 	const helper_world = new THREE.CameraHelper( CAMERA_STRUCT.world_camera );
 	// scene.add(helper_world);
 	const size = 1000;
@@ -249,6 +254,9 @@ function init() {
 
 	const gridHelper = new THREE.GridHelper( size, divisions, 0xffffff, 0xcccccc );
 	// scene.add( gridHelper );
+
+	const axesHelper = new THREE.AxesHelper( 1000 );
+	scene.add( axesHelper );	
 }
 //-------------------------------------------------------------------------------------------------------------------------
 
@@ -295,7 +303,7 @@ function animate()
 	{
 		world_controls.enabled = false;
 		fp_controls.enabled = true;
-		drone_controls.enabled = false;
+		drone_controls.enabled = true;
 		render();
 	}
 	else
