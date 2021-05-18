@@ -4,6 +4,7 @@ import { OBJLoader } from 'https://unpkg.com/three@0.127.0/examples/jsm/loaders/
 import Stats from 'https://unpkg.com/three@0.127.0/examples/jsm/libs/stats.module.js';
 import { FirstPersonControls } from './World/Components/Controls/FirstPersonControls.js';
 import { ThirdPersonControls } from './World/Components/Controls/ThirdPersonControls.js';
+import { BasicCharacterController } from './World/Components/Controls/FirstPersonControl.js';
 //------------------------GLOBAL VARIABLES-------------------------------------
 var world_controls, 
 	fp_controls, 
@@ -13,7 +14,7 @@ var world_controls,
 	stats,
 	scenery, 
 	scenery_loaded = false;
-	
+
 var CAMERA_STRUCT = 
 {
 	world_camera : new THREE.PerspectiveCamera( 60, window.innerWidth / window.innerHeight, 0.1, 10000 ),	//CURRENT_VIEW = 0
@@ -25,6 +26,10 @@ var CURRENT_VIEW = 0;
 const clock = new THREE.Clock();
 
 var base_position
+// Animation Variables:
+var mixers = [],
+	previousRAF = null,
+	fpControls;
 /*
 init() used to setup all the assets of the scene,  setup controls, cameras and textures.
 Provides a loading manager, shown during loading of all assets
@@ -199,7 +204,7 @@ function init() {
 
 	//------------------------------------PLAYER SETUP-------------------------------------------
 	{
-		const box = new THREE.BoxGeometry(60,60,60);
+		const box = new THREE.BoxGeometry(0,0,0);
 		const box_material = new THREE.MeshPhongMaterial({color: 0xffffff, flatShading: true});
 		const cube = new THREE.Mesh(box, box_material);
 		cube.name = "player1"
@@ -214,7 +219,12 @@ function init() {
 		scene.add(CAMERA_STRUCT.drone_camera); //Making the drone Player's children, so that it can move along with the player
 		scene.add(cube);
 	}
-	
+	var params = {
+		camera: CAMERA_STRUCT['fp_camera'],
+		scene: scene,
+		domElement: renderer.domElement,
+	}
+	fpControls = new BasicCharacterController(params, loadingManager);
 	//---------------------------------------PLAYER CONTROLS-------------------------------------
 	{
 		fp_controls = new FirstPersonControls(scene.getObjectByName("player1"), CAMERA_STRUCT.fp_camera, renderer.domElement);
@@ -291,32 +301,56 @@ function onTransitionEnd( event )
 //---------------Animation Loop-------------
 function animate() 
 {
-	requestAnimationFrame( animate );
+	// requestAnimationFrame( animate );
 	if(CURRENT_VIEW == 0)
 	{
 		world_controls.enabled = true;
-		fp_controls.enabled = false;
+		// fp_controls.enabled = false;
+		fpControls.enabled = false;
 		drone_controls.enabled = false;
 		render();
 	}
 	else if(CURRENT_VIEW == 1)
 	{
 		world_controls.enabled = false;
-		fp_controls.enabled = true;
+		// fp_controls.enabled = true;
+		fpControls.enabled = true;
 		drone_controls.enabled = true;
 		render();
 	}
 	else
 	{
 		world_controls.enabled = false;
-		fp_controls.enabled = false;
+		// fp_controls.enabled = false;
+		fpControls.enabled = false;
 		drone_controls.enabled = true;
 		render();
 	}
-	fp_controls.update(clock.getDelta());
-	drone_controls.update(clock.getDelta());
-	world_controls.update(clock.getDelta());
+	requestAnimationFrame((t) => {
+		if(previousRAF === null)
+		{
+			previousRAF = t;
+		}
+		animate();
+		step(t - previousRAF);
+		previousRAF = t;
+	});
+	// fp_controls.update(clock.getDelta());
+	// drone_controls.update(clock.getDelta());
+	// world_controls.update(clock.getDelta());
 	stats.update(clock.getDelta());
+}
+
+function step(timeElapsed)
+{
+	const timeElapsedS = timeElapsed* 0.001;
+	if(mixers)
+	{
+		mixers.map(m => m.update(timeElapsedS))
+	}
+	fpControls.Update(timeElapsedS);
+	drone_controls.update(timeElapsedS);
+	world_controls.update(timeElapsedS);
 }
 function render() 
 {

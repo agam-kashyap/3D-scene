@@ -102,8 +102,8 @@ class ThirdPersonControls {
         let obj_lat = 0;
         let cam_lat = 0;
         let lon = 0;
-        lon = -this.mouseX * actualLookSpeed ;
-        cam_lat = -this.mouseY * actualLookSpeed ;
+        lon = -this.mouseX * actualLookSpeed;
+        cam_lat = -this.mouseY * actualLookSpeed;
 
         let obj_phi = MathUtils.degToRad(90);
         let cam_phi = MathUtils.degToRad(90 - cam_lat);
