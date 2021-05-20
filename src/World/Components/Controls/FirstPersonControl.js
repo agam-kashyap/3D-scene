@@ -1,7 +1,7 @@
 
-import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.118/build/three.module.js';
+import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.127.0/build/three.module.js';
 
-import {FBXLoader} from 'https://cdn.jsdelivr.net/npm/three@0.118.1/examples/jsm/loaders/FBXLoader.js';
+import {FBXLoader} from 'https://cdn.jsdelivr.net/npm/three@0.127.0/examples/jsm/loaders/FBXLoader.js';
 
 // Using a Proxy class to get animations from Charechter Controller
 // since we don't want to edit the animation inside the Charechter Controller
@@ -15,35 +15,39 @@ class BasicCharacterControllerProxy {
 }
 
 export class BasicCharacterController {
-    constructor(params, loader) {
-        this._init(params);
-        this._loadingManager = loader;
+    constructor(params) {
+        this._init(params)
+        // this.enabled = false;
     }
     
+    enable(val)
+    {
+        this.enabled = val;
+    }
     _init(params) {
+        
         this._animations = {};
         this._params = params
         console.log("params",this._params)
 
-        this._lookspeed = 10;
-        this._decceleration = new THREE.Vector3(-0.0005, -0.0001, -5.0);
-        this._acceleration = new THREE.Vector3(1, 0.25, 50.0);
+        this._lookspeed = 0.001;
+        this._decceleration = new THREE.Vector3(-0.5, -0.1, -50.0);
+        this._acceleration = new THREE.Vector3(10, 20.5, 500.0);
         this._velocity = new THREE.Vector3(0, 0, 0);
         this._input = new BasicCharacterControllerInput(this._params);
         this._stateMachine = new CharechterFSM(new BasicCharacterControllerProxy(this._animations))
         this._LoadModels();
 
         this.enabled = false;
-
     }
     _LoadModels() {
         // initializing an FBX loader
-        const fbxLoader = new FBXLoader(this._loadingManager);
+        const fbxLoader = new FBXLoader();
         fbxLoader.setPath('src/World/Components/Models/')
         fbxLoader.load(
             'xbot.fbx',
             (fbx) => {
-                fbx.scale.setScalar(500);
+                fbx.scale.setScalar(0.5);
                 fbx.traverse(part => {
                     part.castShadow = true;
                 })
@@ -52,17 +56,15 @@ export class BasicCharacterController {
                 console.log("object",fbx)
                 this._target = fbx
                 console.log(fbx)
-                //Adding the camera as a child 
-                // this._camera = this._target.getObjectByName('mixamorigHead').add(this._params.camera)
+
                 this._camera = this._params.camera;
+                // Dummy object
+                this.tofollow = this._target.getObjectByName('mixamorigHead').add(new THREE.SphereGeometry(0,0,0));
 
                 this._params.scene.add(fbx);
 
-                //Creating an Animation Mixer for the animation sequence
                 this._mixer = new THREE.AnimationMixer(this._target)
 
-                // A loading Manager that would check 
-                // if the animation is laoding and set to an idle state until completed
                 this._manager = new THREE.LoadingManager();
         
                 this._manager.onLoad = () => {
@@ -87,8 +89,6 @@ export class BasicCharacterController {
                 
             },
             (xhr) => {}
-            //     console.log((xhr.loaded / xhr.total * 100) + '% loaded')
-            // },
             ,(error) => {
                 console.log(error);
         })
@@ -97,8 +97,9 @@ export class BasicCharacterController {
     Update(timeInSeconds) {
         // If there is no target variable in Charechter Controller there is some error
         if (!this._target || !this.enabled) {
-        return;
+            return;
         }
+
         
         // Update your state machine to come to the initial State or change state
         this._stateMachine.Update(timeInSeconds, this._input);
@@ -142,20 +143,20 @@ export class BasicCharacterController {
         controlObject.quaternion.copy(_R);
         //-----------------------Rotation with Mouse----------------
         var obj_lat = 0;
-        var cam_lat = -this._input.mouseY * this._lookspeed * timeInSeconds;
-        var lon = -this._input.mouseX * this._lookspeed * timeInSeconds;
+
+        var cam_lat = THREE.MathUtils.mapLinear(-this._input.mouseY,this._params.domElement.height, 0, -90, 90);
+        var lon = THREE.MathUtils.mapLinear(-this._input.mouseX, 0, this._params.domElement.width, 180, 0);
         let obj_phi = THREE.MathUtils.degToRad(90 - obj_lat);
-        let cam_phi = THREE.MathUtils.degToRad(45 + cam_lat);
+        let cam_phi = THREE.MathUtils.degToRad(90 - cam_lat);
         let theta = THREE.MathUtils.degToRad(Math.max(0, Math.min(180, lon)));
 
-        console.log(controlObject.position);
-
         let _objDirection = new THREE.Vector3();
-        _objDirection.setFromSphericalCoords(30, obj_phi, -theta).add(controlObject.position);
+        _objDirection.setFromSphericalCoords(1, obj_phi, theta).add(controlObject.position);
         controlObject.lookAt(_objDirection);
         
         let _camDirection = new THREE.Vector3();
-        _camDirection.setFromSphericalCoords(30, cam_phi, -theta).add(controlObject.position);
+        _camDirection.setFromSphericalCoords(100, cam_phi, theta).add(controlObject.position);
+        this._camera.lookAt(_camDirection);
 
         const oldPosition = new THREE.Vector3();
         oldPosition.copy(controlObject.position);
@@ -180,10 +181,18 @@ export class BasicCharacterController {
         this._mixer.update(timeInSeconds);
         }
 
-        let _cameraPosition = controlObject.getObjectByName('mixamorigHead').clone();
-        _cameraPosition.applyMatrix4(controlObject.matrix);
-        this._camera.position.set(_cameraPosition.position.x, _cameraPosition.position.y+7, _cameraPosition.position.z);
-        this._camera.lookAt(_camDirection);
+        // Create a dummy object to find the final positions of the objects
+        let dum = this.tofollow.clone()
+        dum.applyMatrix4(this.tofollow.parent.matrix);
+        let _proxyCameraPosition = controlObject.clone();
+        let name = _proxyCameraPosition.getObjectByName('mixamorigHead').parent.name;
+        while(_proxyCameraPosition.getObjectByName(name).parent != null)
+        {
+            dum.applyMatrix4(_proxyCameraPosition.getObjectByName(name).matrix);
+            name = _proxyCameraPosition.getObjectByName(name).parent.name;
+        }
+        dum.applyMatrix4(_proxyCameraPosition.getObjectByName(name).matrix);
+        this._camera.position.set(dum.position.x,dum.position.y,dum.position.z);
     }
 }
 

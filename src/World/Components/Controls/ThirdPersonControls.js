@@ -115,7 +115,6 @@ class ThirdPersonControls {
 
         let DirectionVec = new Vector3();
         DirectionVec.setFromSphericalCoords(1, cam_phi, theta);
-        console.log(DirectionVec);
 
         let _objectposition = new Vector3(this.object.position.x, this.object.position.y+200, this.object.position.z);
         let CameraPosition = _objectposition.add(DirectionVec.multiplyScalar(300));

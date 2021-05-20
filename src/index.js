@@ -27,8 +27,7 @@ const clock = new THREE.Clock();
 
 var base_position
 // Animation Variables:
-var mixers = [],
-	previousRAF = null,
+var previousRAF = null,
 	fpControls;
 /*
 init() used to setup all the assets of the scene,  setup controls, cameras and textures.
@@ -83,7 +82,7 @@ function init() {
 		world_controls.dampingFactor = 0.05;
 		world_controls.screenSpacePanning = false;
 		world_controls.minDistance = 100;
-		world_controls.maxDistance = 1000;
+		world_controls.maxDistance = 100000;
 		world_controls.maxPolarAngle = Math.PI / 2.2;
 		world_controls.keys = {
 			LEFT: 'Numpad4', //left arrow
@@ -212,7 +211,7 @@ function init() {
 		cube.lookAt(0,0,-200);
 		cube.updateMatrix();
 
-		cube.add(CAMERA_STRUCT.fp_camera); // Making the first person camera Player's children, to facilitate same movement
+		// cube.add(CAMERA_STRUCT.fp_camera); // Making the first person camera Player's children, to facilitate same movement
 		CAMERA_STRUCT.drone_camera.position.y = cube.position.y + 200;
 		CAMERA_STRUCT.drone_camera.position.z = cube.position.z + 200; 
 		CAMERA_STRUCT.drone_camera.lookAt(cube.position.x, cube.position.y, cube.position.z); //Order of calling position, lookat relatively, matters
@@ -220,18 +219,19 @@ function init() {
 		scene.add(cube);
 	}
 	var params = {
-		camera: CAMERA_STRUCT['fp_camera'],
+		camera: CAMERA_STRUCT.fp_camera,
 		scene: scene,
 		domElement: renderer.domElement,
 	}
+	const followLight = new THREE.SpotLight(0xffffff);
+	const trackLightMesh = new THREE.SphereGeometry(30,100,100);
+	followLight.add(new THREE.Mesh(trackLightMesh, new THREE.MeshBasicMaterial({ color: 0xffffff})));
+	followLight.position.set(0,1000,0);
+	scene.add(followLight);
+
 	fpControls = new BasicCharacterController(params, loadingManager);
 	//---------------------------------------PLAYER CONTROLS-------------------------------------
 	{
-		fp_controls = new FirstPersonControls(scene.getObjectByName("player1"), CAMERA_STRUCT.fp_camera, renderer.domElement);
-		fp_controls.lookVertical = true; 
-		fp_controls.movementSpeed = 150;
-		fp_controls.lookSpeed = 0.1;
-		fp_controls.activeLook = false;
 
 		drone_controls = new ThirdPersonControls(scene.getObjectByName("player1"), CAMERA_STRUCT.drone_camera, renderer.domElement);
 		// drone_controls.lookVertical = true; 
@@ -266,7 +266,7 @@ function init() {
 	// scene.add( gridHelper );
 
 	const axesHelper = new THREE.AxesHelper( 1000 );
-	scene.add( axesHelper );	
+	// scene.add( axesHelper );	
 }
 //-------------------------------------------------------------------------------------------------------------------------
 
@@ -305,7 +305,6 @@ function animate()
 	if(CURRENT_VIEW == 0)
 	{
 		world_controls.enabled = true;
-		// fp_controls.enabled = false;
 		fpControls.enabled = false;
 		drone_controls.enabled = false;
 		render();
@@ -313,7 +312,6 @@ function animate()
 	else if(CURRENT_VIEW == 1)
 	{
 		world_controls.enabled = false;
-		// fp_controls.enabled = true;
 		fpControls.enabled = true;
 		drone_controls.enabled = true;
 		render();
@@ -321,7 +319,6 @@ function animate()
 	else
 	{
 		world_controls.enabled = false;
-		// fp_controls.enabled = false;
 		fpControls.enabled = false;
 		drone_controls.enabled = true;
 		render();
@@ -338,16 +335,14 @@ function animate()
 	// fp_controls.update(clock.getDelta());
 	// drone_controls.update(clock.getDelta());
 	// world_controls.update(clock.getDelta());
-	stats.update(clock.getDelta());
+	// fpControls.Update(clock.getDelta());
+	// stats.update(clock.getDelta());
 }
 
 function step(timeElapsed)
 {
 	const timeElapsedS = timeElapsed* 0.001;
-	if(mixers)
-	{
-		mixers.map(m => m.update(timeElapsedS))
-	}
+
 	fpControls.Update(timeElapsedS);
 	drone_controls.update(timeElapsedS);
 	world_controls.update(timeElapsedS);
