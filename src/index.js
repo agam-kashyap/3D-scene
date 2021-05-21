@@ -2,7 +2,6 @@ import * as THREE from 'https://unpkg.com/three@0.127.0/build/three.module.js';
 import { OrbitControls } from 'https://unpkg.com/three@0.127.0/examples/jsm/controls/OrbitControls.js'
 import { OBJLoader } from 'https://unpkg.com/three@0.127.0/examples/jsm/loaders/OBJLoader.js';
 import Stats from 'https://unpkg.com/three@0.127.0/examples/jsm/libs/stats.module.js';
-import { FirstPersonControls } from './World/Components/Controls/FirstPersonControls.js';
 import { ThirdPersonControls } from './World/Components/Controls/ThirdPersonControls.js';
 import { BasicCharacterController } from './World/Components/Controls/FirstPersonControl.js';
 //------------------------GLOBAL VARIABLES-------------------------------------
