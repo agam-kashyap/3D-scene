@@ -15,9 +15,9 @@ class BasicCharacterControllerProxy {
 }
 
 export class BasicCharacterController {
-    constructor(params) {
+    constructor(params, light) {
         this._init(params)
-        // this.enabled = false;
+        this.light = light;
     }
     
     enable(val)
@@ -56,7 +56,7 @@ export class BasicCharacterController {
                 console.log("object",fbx)
                 this._target = fbx
                 console.log(fbx)
-
+                this.light.target = fbx;
                 this._camera = this._params.camera;
                 // Dummy object
                 this.tofollow = this._target.getObjectByName('mixamorigHead').add(new THREE.SphereGeometry(0,0,0));
@@ -193,6 +193,11 @@ export class BasicCharacterController {
         }
         dum.applyMatrix4(_proxyCameraPosition.getObjectByName(name).matrix);
         this._camera.position.set(dum.position.x,dum.position.y,dum.position.z);
+    }
+    getTarget()
+    {
+        return this._target;
+        debugger;
     }
 }
 

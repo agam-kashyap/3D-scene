@@ -27,7 +27,8 @@ const clock = new THREE.Clock();
 var base_position
 // Animation Variables:
 var previousRAF = null,
-	fpControls;
+	fpControls,
+	followLight;
 /*
 init() used to setup all the assets of the scene,  setup controls, cameras and textures.
 Provides a loading manager, shown during loading of all assets
@@ -222,15 +223,18 @@ function init() {
 		scene: scene,
 		domElement: renderer.domElement,
 	}
-	const followLight = new THREE.SpotLight(0xffffff);
+	followLight = new THREE.SpotLight(0xffffff);
 	const trackLightMesh = new THREE.SphereGeometry(30,100,100);
 	followLight.add(new THREE.Mesh(trackLightMesh, new THREE.MeshBasicMaterial({ color: 0xffffff})));
 	followLight.position.set(0,1000,0);
 	scene.add(followLight);
-
-	fpControls = new BasicCharacterController(params, loadingManager);
+	followLight.angle = Math.PI/100
+	
 	//---------------------------------------PLAYER CONTROLS-------------------------------------
 	{
+
+		fpControls = new BasicCharacterController(params, followLight);
+		
 
 		drone_controls = new ThirdPersonControls(scene.getObjectByName("player1"), CAMERA_STRUCT.drone_camera, renderer.domElement);
 		// drone_controls.lookVertical = true; 
