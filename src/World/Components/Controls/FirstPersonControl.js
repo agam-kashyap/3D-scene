@@ -137,25 +137,24 @@ export class PersonController {
         if (this._input._keys.backward) {
         velocity.z -= acc.z * timeInSeconds;
         }
-        if (this._input._keys.left) {
-        _A.set(0, 1, 0);
-        _Q.setFromAxisAngle(_A, 4.0 * Math.PI * timeInSeconds * this._acceleration.y);
-        _R.multiply(_Q);
+        // if (this._input._keys.left) {
+        // _A.set(0, 1, 0);
+        // _Q.setFromAxisAngle(_A, 4.0 * Math.PI * timeInSeconds * this._acceleration.y);
+        // _R.multiply(_Q);
 
-        controlObject.quaternion.copy(_R)
-        this._camera.quaternion.copy(_R)
-        }
-        if (this._input._keys.right) {
-        _A.set(0, 1, 0);
-        _Q.setFromAxisAngle(_A, 4.0 * -Math.PI * timeInSeconds * this._acceleration.y);
-        _R.multiply(_Q);
+        // controlObject.quaternion.copy(_R)
+        // this._camera.quaternion.copy(_R)
+        // }
+        // if (this._input._keys.right) {
+        // _A.set(0, 1, 0);
+        // _Q.setFromAxisAngle(_A, 4.0 * -Math.PI * timeInSeconds * this._acceleration.y);
+        // _R.multiply(_Q);
 
 
-        controlObject.quaternion.copy(_R)
-        this._camera.quaternion.copy(_R)
-        }
+        // controlObject.quaternion.copy(_R)
+        // this._camera.quaternion.copy(_R)
+        // }
 
-        controlObject.quaternion.copy(_R);
         //-----------------------Rotation with Mouse----------------
         
         // Find the current spherical coordinate of the object
