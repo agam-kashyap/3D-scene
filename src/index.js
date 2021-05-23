@@ -6,12 +6,15 @@ import { PersonController } from './World/Components/Controls/FirstPersonControl
 //------------------------GLOBAL VARIABLES-------------------------------------
 var world_controls, 
 	fp_controls, 
-	// drone_controls,
 	scene, 
 	renderer, 
 	stats,
 	scenery, 
-	scenery_loaded = false;
+	scenery_loaded = false,
+	DayTexture,
+	NightTexture,
+	DayDirLight,
+	NightDirLight;
 
 var CAMERA_STRUCT = 
 {
@@ -19,7 +22,8 @@ var CAMERA_STRUCT =
 	fp_camera : new THREE.PerspectiveCamera( 30, window.innerWidth / window.innerHeight, 0.1, 10000 ), 		//CURRENT_VIEW = 1 
 	drone_camera : new THREE.PerspectiveCamera( 60, window.innerWidth / window.innerHeight, 0.1, 10000 ),	//CURRENT_VIEW = 2
 };
-var CURRENT_VIEW = 0; 
+var CURRENT_VIEW = 0,
+	day = false; 
 
 const clock = new THREE.Clock();
 
@@ -72,6 +76,26 @@ function init() {
 	scene = new THREE.Scene();
 	scene.background = new THREE.Color( 0x210021 );
 
+	const TextureLoader = new THREE.CubeTextureLoader();
+	DayTexture = TextureLoader.load([
+		'/assets/Texture/Day/posx.png',
+		'/assets/Texture/Day/negx.png',
+		'/assets/Texture/Day/posy.png',
+		'/assets/Texture/Day/negy.png',
+		'/assets/Texture/Day/posz.png',
+		'/assets/Texture/Day/negz.png',
+	]);
+	NightTexture = TextureLoader.load([
+		'/assets/Texture/Night/posx.png',
+		'/assets/Texture/Night/negx.png',
+		'/assets/Texture/Night/posy.png',
+		'/assets/Texture/Night/negy.png',
+		'/assets/Texture/Night/posz.png',
+		'/assets/Texture/Night/negz.png',
+	]);
+	DayTexture.encoding = THREE.sRGBEncoding;
+	NightTexture.encoding = THREE.sRGBEncoding;
+
 	//----------------------------WORLD CAMERA CONTROLS----------------------------------
 	{
 		CAMERA_STRUCT.world_camera.position.set( -1000, 1000, 0 );
@@ -93,57 +117,11 @@ function init() {
 
 	//--------------------PLANE---------------------------------------
 	{
-		loader.load( '../assets/mesh/scene/scene.obj', function ( obj ) {
+		loader.load( '/assets/mesh/scene/scene.obj', function ( obj ) {
 			scenery = obj;
 			scene.add(scenery)
 			scenery_loaded = true;
 		});
-	}
-
-	//---------------------STARS random generation--------------------
-	if(scenery_loaded)
-	{
-		let minX=Infinity, minY=Infinity, minZ=Infinity, maxX=-Infinity, maxY=-Infinity, maxZ=-Infinity;
-		let pos = scenery.geometry.attributes.position.array; // replaced plane by scenery
-		for(let i=0; i< 12;i++)
-		{
-			if(pos[i] < minX)
-			{
-				minX = pos[i];
-			}
-			if(pos[i] > maxX)
-			{
-				maxX = pos[i];
-			}
-			if(pos[i] < minY)
-			{
-				minY = pos[i];
-			}
-			if(pos[i] > maxY)
-			{
-				maxY = pos[i];
-			}
-			if(pos[i] < minZ)
-			{
-				minZ = pos[i];
-			}
-			if(pos[i] > maxZ)
-			{
-				maxZ = pos[i];
-			}
-		}
-		for(let i =0; i< 3;i++)
-		{
-			let x = Math.floor(Math.random() * (maxX - minX) + minX);
-			let z = Math.floor(Math.random() * (maxZ - minZ) + minZ);
-			let y = Math.floor(Math.random() * 2000 + 1000);
-			const star = new THREE.SphereGeometry( 5, 16, 8 );
-			const starMesh = new THREE.Mesh(star, new THREE.MeshBasicMaterial( { color: '#'+(Math.random() * 0xFFFFFF << 0).toString(16).padStart(6, '0') }))
-			starMesh.position.x = x;
-			starMesh.position.y = y;
-			starMesh.position.z = z;
-			scene.add(starMesh);
-		}
 	}
 
 	//----------------------------STREET LAMPS-----------------------------------------
@@ -151,9 +129,9 @@ function init() {
 		let objcnt=1;
 		for(let j = 1; j>-2; j=j-2)
 		{
-			for (let i = 0; i < 10; i ++ ) {
+			for (let i = 0; i < 9; i ++ ) {
 
-				let x = -1000 + i*200
+				let x = -750 + i*200
 				let z = -200*j;
 				let object;
 				loader.load( '../assets/mesh/street-lamp-1/street-lamp.obj', function ( obj ) {
@@ -235,6 +213,7 @@ function init() {
 		followLight = new THREE.SpotLight(0xffffff);
 		const trackLightMesh = new THREE.SphereGeometry(30,10,10);
 		followLight.add(new THREE.Mesh(trackLightMesh, new THREE.MeshBasicMaterial({ color: 0xffffff})));
+		console.log(followLight);
 		followLight.position.set(-440,750,283);
 		scene.add(followLight);
 		followLight.angle = Math.PI/100
@@ -243,16 +222,19 @@ function init() {
 		fp_controls = new PersonController(params, followLight);
 		
 
-		// drone_controls = new ThirdPersonController(params_third, followLight);
 	}
 	//---------------------------------------SCENE LIGHT-----------------------------------------
 	{
-		const dirLight = new THREE.DirectionalLight( 0x210021 ); //Simulating night scene for now
-		dirLight.position.set(50, 50, 50);
-		scene.add( dirLight );
+		NightDirLight = new THREE.DirectionalLight( 0x210021 ); //Simulating night scene for now
+		NightDirLight.position.set(50, 50, 50);
+		// scene.add( NightDirLight );
 
-		const ambient = new THREE.AmbientLight( 0xffffff, 0.1 );
-		scene.add( ambient );
+		DayDirLight = new THREE.DirectionalLight( 0xfdfbd3 ); //Simulating night scene for now
+		DayDirLight.position.set(-50, 50, 50);
+		// scene.add( DayDirLight );
+		
+		const NightAmbient = new THREE.AmbientLight( 0xffffff, 0.1 );
+		scene.add( NightAmbient );
 	}
 
 	//---------------------------------------ENABLE RESIZE--------------------------------------
@@ -283,6 +265,11 @@ window.addEventListener("keydown", (ev) => {
 		CURRENT_VIEW += 1;
 		CURRENT_VIEW %= 3;
 	}
+	if(ev.key == 'n')
+	{
+		day = !day;
+		console.log(!day);
+	}
 });
 //------------------------------------------------------------------------------------------------------------------------
 
@@ -307,26 +294,37 @@ function onTransitionEnd( event )
 //---------------Animation Loop-------------
 function animate() 
 {
+	if(day)
+	{
+		scene.background = DayTexture;
+		scene.add(DayDirLight);
+		scene.remove(NightDirLight);
+		followLight.color = new THREE.Color(1,0,0);
+	}
+	else
+	{
+		scene.background = NightTexture;
+		scene.add(NightDirLight);
+		scene.remove(DayDirLight);
+		followLight.color = new THREE.Color(1,1,1);
+	}
 	// requestAnimationFrame( animate );
 	if(CURRENT_VIEW == 0)
 	{
 		world_controls.enabled = true;
-		fp_controls.enabled = false;
-		// drone_controls.enabled = false;
+		fp_controls.enabled = true;
 		render();
 	}
 	else if(CURRENT_VIEW == 1)
 	{
 		world_controls.enabled = false;
 		fp_controls.enabled = true;
-		// drone_controls.enabled = false;
 		render();
 	}
 	else
 	{
 		world_controls.enabled = false;
 		fp_controls.enabled = true;
-		// drone_controls.enabled = true;
 		render();
 	}
 	requestAnimationFrame((t) => {
@@ -345,7 +343,6 @@ function step(timeElapsed)
 	const timeElapsedS = timeElapsed* 0.001;
 
 	fp_controls.Update(timeElapsedS);
-	// drone_controls.Update(timeElapsedS);
 	world_controls.update(timeElapsedS);
 	stats.update(timeElapsedS);
 }
