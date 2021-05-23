@@ -42,6 +42,8 @@ export class PersonController {
         this._defaultLookVec = new THREE.Vector3(1,0,0);
         this._cameraPosition = new THREE.Vector3();
         this._cameraLook = new THREE.Vector3();
+
+        this._jumpAngle = 0;
     }
     _LoadModels() {
         // initializing an FBX loader
@@ -207,6 +209,21 @@ export class PersonController {
         if (this._mixer) {
         this._mixer.update(timeInSeconds);
         }
+
+        //-----------------------JUMPING---------------------
+        if(this._input._keys.space || this.isJumping)
+        {
+            this.isJumping = true;
+            const upward = new THREE.Vector3(0,1,0)
+            this._jumpAngle += 0.25;
+            upward.y = (Math.sin(this._jumpAngle) + 1)*40;
+            if(upward.y < 1)
+            {
+                this.isJumping = false;
+            }
+            controlObject.position.y = upward.y;
+        }
+
 
         //--------CAMERA PART 2--------------------
         // Create a dummy object to find the final positions of the objects
