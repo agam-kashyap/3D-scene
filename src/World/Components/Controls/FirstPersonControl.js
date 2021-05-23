@@ -14,7 +14,7 @@ class BasicCharacterControllerProxy {
     }
 }
 
-export class BasicCharacterController {
+export class PersonController {
     constructor(params, light) {
         this._init(params)
         this.light = light;
@@ -31,14 +31,17 @@ export class BasicCharacterController {
         console.log("params",this._params)
 
         this._lookspeed = 0.001;
-        this._decceleration = new THREE.Vector3(-0.5, -0.1, -50.0);
-        this._acceleration = new THREE.Vector3(10, 20.5, 500.0);
+        this._decceleration = new THREE.Vector3(-0.5, -0.01, -50.0);
+        this._acceleration = new THREE.Vector3(100, 0.05, 500.0);
         this._velocity = new THREE.Vector3(0, 0, 0);
         this._input = new BasicCharacterControllerInput(this._params);
         this._stateMachine = new CharechterFSM(new BasicCharacterControllerProxy(this._animations))
         this._LoadModels();
 
         this.enabled = false;
+        this._defaultLookVec = new THREE.Vector3(1,0,0);
+        this._cameraPosition = new THREE.Vector3();
+        this._cameraLook = new THREE.Vector3();
     }
     _LoadModels() {
         // initializing an FBX loader
@@ -56,8 +59,11 @@ export class BasicCharacterController {
                 console.log("object",fbx)
                 this._target = fbx
                 console.log(fbx)
+
                 this.light.target = fbx;
-                this._camera = this._params.camera;
+                this._fpcamera = this._params.fpcamera;
+                this._thirdcamera = this._params.thirdcamera;
+
                 // Dummy object
                 this.tofollow = this._target.getObjectByName('mixamorigHead').add(new THREE.SphereGeometry(0,0,0));
 
@@ -133,31 +139,52 @@ export class BasicCharacterController {
         _A.set(0, 1, 0);
         _Q.setFromAxisAngle(_A, 4.0 * Math.PI * timeInSeconds * this._acceleration.y);
         _R.multiply(_Q);
+
+        controlObject.quaternion.copy(_R)
+        this._camera.quaternion.copy(_R)
         }
         if (this._input._keys.right) {
         _A.set(0, 1, 0);
         _Q.setFromAxisAngle(_A, 4.0 * -Math.PI * timeInSeconds * this._acceleration.y);
         _R.multiply(_Q);
+
+
+        controlObject.quaternion.copy(_R)
+        this._camera.quaternion.copy(_R)
         }
 
         controlObject.quaternion.copy(_R);
         //-----------------------Rotation with Mouse----------------
-        var obj_lat = 0;
+        
+        // Find the current spherical coordinate of the object
+        // var lookVec = new THREE.Vector3(1,0,0);
+        // lookVec.applyQuaternion(controlObject.quaternion);
+        // lookVec.normalize();
 
+        // let initialSph = new THREE.Spherical();
+        // initialSph.setFromVector3(lookVec);
+        // console.log(initialSph);
+        // debugger;
+
+        var obj_lat = 0;
+        //-------Camera Part 1--------------
         var cam_lat = THREE.MathUtils.mapLinear(-this._input.mouseY,this._params.domElement.height, 0, -90, 90);
-        var lon = THREE.MathUtils.mapLinear(-this._input.mouseX, 0, this._params.domElement.width, 180, 0);
+        var lon = THREE.MathUtils.mapLinear(-this._input.mouseX, 0, this._params.domElement.width, 360, 0);
         let obj_phi = THREE.MathUtils.degToRad(90 - obj_lat);
         let cam_phi = THREE.MathUtils.degToRad(90 - cam_lat);
-        let theta = THREE.MathUtils.degToRad(Math.max(0, Math.min(180, lon)));
+        let theta = THREE.MathUtils.degToRad(Math.max(0, Math.min(360, lon)));
 
         let _objDirection = new THREE.Vector3();
         _objDirection.setFromSphericalCoords(1, obj_phi, theta).add(controlObject.position);
         controlObject.lookAt(_objDirection);
         
-        let _camDirection = new THREE.Vector3();
-        _camDirection.setFromSphericalCoords(100, cam_phi, theta).add(controlObject.position);
-        this._camera.lookAt(_camDirection);
-
+        let DirectionVec = new THREE.Vector3();
+        DirectionVec.setFromSphericalCoords(100, cam_phi, theta)
+        let objDirectionVec = DirectionVec.clone(); 
+        objDirectionVec.add(controlObject.position);
+        this._fpcamera.lookAt(objDirectionVec);
+        //----------------------------------
+        
         const oldPosition = new THREE.Vector3();
         oldPosition.copy(controlObject.position);
     
@@ -181,6 +208,7 @@ export class BasicCharacterController {
         this._mixer.update(timeInSeconds);
         }
 
+        //--------CAMERA PART 2--------------------
         // Create a dummy object to find the final positions of the objects
         let dum = this.tofollow.clone()
         dum.applyMatrix4(this.tofollow.parent.matrix);
@@ -192,12 +220,21 @@ export class BasicCharacterController {
             name = _proxyCameraPosition.getObjectByName(name).parent.name;
         }
         dum.applyMatrix4(_proxyCameraPosition.getObjectByName(name).matrix);
-        this._camera.position.set(dum.position.x,dum.position.y,dum.position.z);
-    }
-    getTarget()
-    {
-        return this._target;
-        debugger;
+        this._fpcamera.position.set(dum.position.x,dum.position.y,dum.position.z);
+
+        // THIRD PERSON CAMERA
+        let _objectposition = new THREE.Vector3(dum.position.x, dum.position.y, dum.position.z);
+        let newDirection = DirectionVec.clone();
+        let CameraPosition = _objectposition.sub(newDirection.multiplyScalar(2));
+
+        // Calculate a position for the camera 
+        const t = 1.0 - Math.pow(0.01, timeInSeconds*10);
+        this._cameraPosition.lerp(CameraPosition, t);
+        this._cameraLook.lerp(controlObject.position, t);
+
+        this._thirdcamera.position.set(this._cameraPosition.x, this._cameraPosition.y, this._cameraPosition.z);
+        this._thirdcamera.lookAt(this._cameraLook);
+        //-----------------------------------------
     }
 }
 

@@ -2,12 +2,11 @@ import * as THREE from 'https://unpkg.com/three@0.127.0/build/three.module.js';
 import { OrbitControls } from 'https://unpkg.com/three@0.127.0/examples/jsm/controls/OrbitControls.js'
 import { OBJLoader } from 'https://unpkg.com/three@0.127.0/examples/jsm/loaders/OBJLoader.js';
 import Stats from 'https://unpkg.com/three@0.127.0/examples/jsm/libs/stats.module.js';
-import { ThirdPersonControls } from './World/Components/Controls/ThirdPersonControls.js';
-import { BasicCharacterController } from './World/Components/Controls/FirstPersonControl.js';
+import { PersonController } from './World/Components/Controls/FirstPersonControl.js';
 //------------------------GLOBAL VARIABLES-------------------------------------
 var world_controls, 
 	fp_controls, 
-	drone_controls,
+	// drone_controls,
 	scene, 
 	renderer, 
 	stats,
@@ -27,7 +26,7 @@ const clock = new THREE.Clock();
 var base_position
 // Animation Variables:
 var previousRAF = null,
-	fpControls,
+	fp_controls,
 	followLight;
 /*
 init() used to setup all the assets of the scene,  setup controls, cameras and textures.
@@ -218,29 +217,33 @@ function init() {
 		scene.add(CAMERA_STRUCT.drone_camera); //Making the drone Player's children, so that it can move along with the player
 		scene.add(cube);
 	}
-	var params = {
-		camera: CAMERA_STRUCT.fp_camera,
-		scene: scene,
-		domElement: renderer.domElement,
-	}
-	followLight = new THREE.SpotLight(0xffffff);
-	const trackLightMesh = new THREE.SphereGeometry(30,100,100);
-	followLight.add(new THREE.Mesh(trackLightMesh, new THREE.MeshBasicMaterial({ color: 0xffffff})));
-	followLight.position.set(0,1000,0);
-	scene.add(followLight);
-	followLight.angle = Math.PI/100
 	
 	//---------------------------------------PLAYER CONTROLS-------------------------------------
 	{
+		var params = {
+			fpcamera: CAMERA_STRUCT.fp_camera,
+			thirdcamera: CAMERA_STRUCT.drone_camera,
+			scene: scene,
+			domElement: renderer.domElement,
+		}
+		var params_third = {
+			camera: CAMERA_STRUCT.drone_camera,
+			scene: scene,
+			domElement: renderer.domElement,
+		}
 
-		fpControls = new BasicCharacterController(params, followLight);
+		followLight = new THREE.SpotLight(0xffffff);
+		const trackLightMesh = new THREE.SphereGeometry(30,10,10);
+		followLight.add(new THREE.Mesh(trackLightMesh, new THREE.MeshBasicMaterial({ color: 0xffffff})));
+		followLight.position.set(-440,750,283);
+		scene.add(followLight);
+		followLight.angle = Math.PI/100
 		
 
-		drone_controls = new ThirdPersonControls(scene.getObjectByName("player1"), CAMERA_STRUCT.drone_camera, renderer.domElement);
-		// drone_controls.lookVertical = true; 
-		// drone_controls.movementSpeed = 150;
-		// drone_controls.lookSpeed = 0.1;
-		// drone_controls.activeLook = false;
+		fp_controls = new PersonController(params, followLight);
+		
+
+		// drone_controls = new ThirdPersonController(params_third, followLight);
 	}
 	//---------------------------------------SCENE LIGHT-----------------------------------------
 	{
@@ -269,7 +272,7 @@ function init() {
 	// scene.add( gridHelper );
 
 	const axesHelper = new THREE.AxesHelper( 1000 );
-	// scene.add( axesHelper );	
+	scene.add( axesHelper );	
 }
 //-------------------------------------------------------------------------------------------------------------------------
 
@@ -308,22 +311,22 @@ function animate()
 	if(CURRENT_VIEW == 0)
 	{
 		world_controls.enabled = true;
-		fpControls.enabled = false;
-		drone_controls.enabled = false;
+		fp_controls.enabled = false;
+		// drone_controls.enabled = false;
 		render();
 	}
 	else if(CURRENT_VIEW == 1)
 	{
 		world_controls.enabled = false;
-		fpControls.enabled = true;
-		drone_controls.enabled = true;
+		fp_controls.enabled = true;
+		// drone_controls.enabled = false;
 		render();
 	}
 	else
 	{
 		world_controls.enabled = false;
-		fpControls.enabled = false;
-		drone_controls.enabled = true;
+		fp_controls.enabled = true;
+		// drone_controls.enabled = true;
 		render();
 	}
 	requestAnimationFrame((t) => {
@@ -335,20 +338,16 @@ function animate()
 		step(t - previousRAF);
 		previousRAF = t;
 	});
-	// fp_controls.update(clock.getDelta());
-	// drone_controls.update(clock.getDelta());
-	// world_controls.update(clock.getDelta());
-	// fpControls.Update(clock.getDelta());
-	// stats.update(clock.getDelta());
 }
 
 function step(timeElapsed)
 {
 	const timeElapsedS = timeElapsed* 0.001;
 
-	fpControls.Update(timeElapsedS);
-	drone_controls.update(timeElapsedS);
+	fp_controls.Update(timeElapsedS);
+	// drone_controls.Update(timeElapsedS);
 	world_controls.update(timeElapsedS);
+	stats.update(timeElapsedS);
 }
 function render() 
 {
