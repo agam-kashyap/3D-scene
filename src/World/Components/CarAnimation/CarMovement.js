@@ -111,7 +111,6 @@ export class CarMovement {
                     this.car.position.copy( newPosition );
                     this.currentPoint += 1
                 }
-                console.log(this.car.position)
                 
                 if(Math.abs(angle) > Math.PI / 40) {
                     _A.set(0, 0, 1);

@@ -39,7 +39,7 @@ var previousRAF = null,
 	followLight,
 	PlayerBBox, PlayerBBoxHelper,
 	LeaderBBox = new THREE.Box3(), 
-	ChildBBox = new THREE.Box3(), dabba, dabbaBBoxHelper;
+	ChildBBox = new THREE.Box3(), dabba, dabbaBBox = new THREE.Box3();
 /*
 init() used to setup all the assets of the scene,  setup controls, cameras and textures.
 Provides a loading manager, shown during loading of all assets
@@ -241,17 +241,17 @@ function init() {
 		// scene.add(PlayerBBoxHelper);
 		// scene.add(PlayerBBox);
 		//------------------------------------DUMMY OBJECT FOR TRIAL--------------------------------------
-		// let dabba_mesh = new THREE.BoxGeometry(50,50,50);
-		// const material = new THREE.MeshBasicMaterial( {color: 0x00ff00} );
-		// dabba = new THREE.Mesh(dabba_mesh, material);
-		// scene.add(dabba);
-		// dabba.position.y = 25;
-		// dabba.position.x = 200;
-		// dabba.position.z = 50;
-		// dabbaBBox = new THREE.Box3();
+		let dabba_mesh = new THREE.BoxGeometry(50,50,50);
+		const material = new THREE.MeshBasicMaterial( {color: 0x00ff00} );
+		dabba = new THREE.Mesh(dabba_mesh, material);
+		scene.add(dabba);
+		dabba.position.y = 25;
+		dabba.position.x = 200;
+		dabba.position.z = 50;
+		dabbaBBox = new THREE.Box3();
 		// dabbaBBoxHelper = new THREE.Box3Helper(dabbaBBox, 0x00ffff);
 		// scene.add(dabbaBBoxHelper);
-		// scene.add(dabbaBBox);
+		scene.add(dabbaBBox);
 	}
 	// -------------------------------- Adding Cars in Scene --------------------------
 	{
@@ -355,10 +355,24 @@ function checkCollisions()
 	{
 		return;
 	}
-	debugger;
+
+	dabbaBBox.setFromObject(dabba); //Send the BBox of the objects after applying the matrix operation. 
+	let bbox = player_controls.getBoundingBox();
+	let centerdabba = new THREE.Vector3();
+	dabbaBBox.getCenter(centerdabba);
+	if(bbox.intersectsBox(dabbaBBox))
+	{
+		player_controls.intersectingObject(true,dabbaBBox);
+	}
+	else
+	{
+		player_controls.intersectingObject(false);
+	}
+
+
 	LeaderBBox.setFromObject(LeaderCarMovement.car); //Send the BBox of the objects after applying the matrix operation. 
 	
-	let bbox = player_controls.getBoundingBox();
+	// let bbox = player_controls.getBoundingBox();
 	let centerLeader = new THREE.Vector3();
 	LeaderBBox.getCenter(centerLeader);
 	if(bbox.intersectsBox(LeaderBBox))
