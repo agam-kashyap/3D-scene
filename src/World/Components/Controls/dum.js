@@ -48,6 +48,8 @@ export class PersonController {
         //----------------------__TRIALLLL__-------------------------
         this._boundingBox = new THREE.Box3();
         this.isIntersecting = false;
+        this.basePos = 0;
+        this.intersectingObjectCenter = new THREE.Vector3();
     }
     _LoadModels() {
         // initializing an FBX loader
@@ -145,6 +147,35 @@ export class PersonController {
         if (this._input._keys.backward) {
         velocity.z -= acc.z * timeInSeconds;
         }
+        // if (this._input._keys.left) {
+        // _A.set(0, 1, 0);
+        // _Q.setFromAxisAngle(_A, 4.0 * Math.PI * timeInSeconds * this._acceleration.y);
+        // _R.multiply(_Q);
+
+        // controlObject.quaternion.copy(_R)
+        // this._camera.quaternion.copy(_R)
+        // }
+        // if (this._input._keys.right) {
+        // _A.set(0, 1, 0);
+        // _Q.setFromAxisAngle(_A, 4.0 * -Math.PI * timeInSeconds * this._acceleration.y);
+        // _R.multiply(_Q);
+
+
+        // controlObject.quaternion.copy(_R)
+        // this._camera.quaternion.copy(_R)
+        // }
+
+        //-----------------------Rotation with Mouse----------------
+        
+        // Find the current spherical coordinate of the object
+        // var lookVec = new THREE.Vector3(1,0,0);
+        // lookVec.applyQuaternion(controlObject.quaternion);
+        // lookVec.normalize();
+
+        // let initialSph = new THREE.Spherical();
+        // initialSph.setFromVector3(lookVec);
+        // console.log(initialSph);
+        // debugger;
 
         //-------Camera Part 1--------------
         var obj_lat = 0;
@@ -167,7 +198,8 @@ export class PersonController {
         let allowMove = true;
         if(this.isIntersecting)
         {
-            if(this.canMove(this.intersectingObjectCenter,this.getBBoxCenter(), _objDirection))
+            debugger;
+            if(this.canMove(this.intersectingObjectCenter,this.getBBoxCenter(), _objDirection) || this.ContactObjectBBox.max.y >= controlObject.position.y + 0.1)
             {
                 allowMove = true;
             }
@@ -175,6 +207,37 @@ export class PersonController {
             {
                 allowMove = false;
             }
+
+            if(this.isJumping)
+            {
+                if(this.ContactObjectBBox.max.y >= controlObject.position.y - 0.1 && this.ContactObjectBBox.max.y <= controlObject.position.y + 0.1)
+                {
+                    this.basePos = this.ContactObjectBBox.max.y;
+                    this.isJumping = false;
+                    this._jumpAngle = 0;
+                }
+            }
+        }
+        else
+        {
+            this.basePos = 1; //Can't support multilevel jumping
+            if(!this.isJumping && controlObject.position.y > this.basePos)
+            {
+                this.position.y -= 0.4;
+            }
+        }
+        //-----------------------JUMPING---------------------
+        if(this._input._keys.space || this.isJumping)
+        {
+            this.isJumping = true;
+            const upward = new THREE.Vector3(0,1,0)
+            this._jumpAngle += 0.25;
+            upward.y = (Math.sin(this._jumpAngle) + 1)*40 + 0.9*this.basePos;
+            if(upward.y < this.basePos)
+            {
+                this.isJumping = false;
+            }
+            controlObject.position.y = upward.y;
         }
 
         if(allowMove)
@@ -202,19 +265,7 @@ export class PersonController {
         this._mixer.update(timeInSeconds);
         }
 
-        //-----------------------JUMPING---------------------
-        if(this._input._keys.space || this.isJumping)
-        {
-            this.isJumping = true;
-            const upward = new THREE.Vector3(0,1,0)
-            this._jumpAngle += 0.25;
-            upward.y = (Math.sin(this._jumpAngle) + 1)*40;
-            if(upward.y < 1)
-            {
-                this.isJumping = false;
-            }
-            controlObject.position.y = upward.y;
-        }
+        
 
 
         //--------CAMERA PART 2--------------------
@@ -237,7 +288,7 @@ export class PersonController {
         let CameraPosition = _objectposition.sub(newDirection.multiplyScalar(2));
 
         // Calculate a position for the camera 
-        const t = 1.0 - Math.pow(0.01, timeInSeconds*10);
+        const t = 1.0 - Math.pow(0.01, timeInSeconds*0.5);
         this._cameraPosition.lerp(CameraPosition, t);
         this._cameraLook.lerp(controlObject.position, t);
 
@@ -248,16 +299,28 @@ export class PersonController {
 
     canMove(Center1, Center2, Look)
     {
-        let v1 = new THREE.Vector2(Center1.x, Center1.z);
-        let v2 = new THREE.Vector2(Center2.x, Center2.z);
-        let l = new THREE.Vector2(Look.x, Look.z);
-        let Vec1 = v1.sub(v2);
-        let Vec2 = l.sub(v2);
+        // Compare only the x and the z values, since in y we are allowing movement irrespective of intersection
+        // let C1 = new THREE.Vector2(Center1.x, Center1.z);
+        // let C2 = new THREE.Vector2(Center2.x, Center2.z);
+        // let L = new THREE.Vector2(Look.x, Look.z);
+        // let Vec1 = C1.sub(C2);
+        // let Vec2 = L.sub(C2);
+        // Vec1.normalize();
+        // Vec2.normalize();
+        // if(Vec1.dot(Vec2) <= 0)
+        // {
+        //     return true;
+        // }
+        // else
+        // {
+        //     return false;
+        // }
+
+        let Vec1 = Center1.sub(Center2);
+        let Vec2 = Look.sub(Center2);
         Vec1.normalize();
         Vec2.normalize();
-        let temp = Vec1.dot(Vec2);
-        console.log(temp);
-        if(temp < 0)
+        if(Vec1.angleTo(Vec2) >= Math.PI/2 || Vec1.angleTo(Vec2) <= - Math.PI/2)
         {
             return true;
         }
@@ -267,10 +330,12 @@ export class PersonController {
         }
     }
 
-    intersectingObject(bool, Center1=null)
+    intersectingObject(bool, BBox=null)
     {
         this.isIntersecting = bool;
-        this.intersectingObjectCenter = Center1;
+        if(BBox == null) return;
+        this.ContactObjectBBox = BBox.clone();
+        this.ContactObjectBBox.getCenter(this.intersectingObjectCenter);
     }
 
     getObject()
@@ -280,17 +345,16 @@ export class PersonController {
     getBoundingBox()
     {
         let step1 = this._boundingBox.clone();
-        let step2 = this._target.matrixWorld;
         let step3 = step1.applyMatrix4(this._target.matrixWorld);
         return step3;
     }
     getBBoxCenter()
     {
+        debugger;
         let step1 = this._boundingBox.clone();
-        let step2 = this._target.matrixWorld;
         let step3 = step1.applyMatrix4(this._target.matrixWorld);
         let step4 = new THREE.Vector3();
-        step3.getCenter(step4)
+        step3.getCenter(step4);
         return step4;
     }
 }

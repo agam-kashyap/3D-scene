@@ -5,7 +5,7 @@ import Stats from 'https://unpkg.com/three@0.127.0/examples/jsm/libs/stats.modul
 import { PersonController } from './World/Components/Controls/FirstPersonControl.js';
 //------------------------GLOBAL VARIABLES-------------------------------------
 var world_controls, 
-	fp_controls, 
+	player_controls, 
 	scene, 
 	renderer, 
 	stats,
@@ -30,8 +30,9 @@ const clock = new THREE.Clock();
 var base_position
 // Animation Variables:
 var previousRAF = null,
-	fp_controls,
-	followLight;
+	followLight,
+	PlayerBBox, PlayerBBoxHelper,
+	dabbaBBox, dabba, dabbaBBoxHelper;
 /*
 init() used to setup all the assets of the scene,  setup controls, cameras and textures.
 Provides a loading manager, shown during loading of all assets
@@ -73,29 +74,30 @@ function init() {
 	}
 
 	//---------------------------------CREATING MAIN SCENE--------------------------------
-	scene = new THREE.Scene();
-	scene.background = new THREE.Color( 0x210021 );
+	{
+		scene = new THREE.Scene();
+		scene.background = new THREE.Color( 0x210021 );
 
-	const TextureLoader = new THREE.CubeTextureLoader();
-	DayTexture = TextureLoader.load([
-		'/assets/Texture/Day/posx.png',
-		'/assets/Texture/Day/negx.png',
-		'/assets/Texture/Day/posy.png',
-		'/assets/Texture/Day/negy.png',
-		'/assets/Texture/Day/posz.png',
-		'/assets/Texture/Day/negz.png',
-	]);
-	NightTexture = TextureLoader.load([
-		'/assets/Texture/Night/posx.png',
-		'/assets/Texture/Night/negx.png',
-		'/assets/Texture/Night/posy.png',
-		'/assets/Texture/Night/negy.png',
-		'/assets/Texture/Night/posz.png',
-		'/assets/Texture/Night/negz.png',
-	]);
-	DayTexture.encoding = THREE.sRGBEncoding;
-	NightTexture.encoding = THREE.sRGBEncoding;
-
+		const TextureLoader = new THREE.CubeTextureLoader();
+		DayTexture = TextureLoader.load([
+			'./assets/Texture/Day/posx.png',
+			'./assets/Texture/Day/negx.png',
+			'./assets/Texture/Day/posy.png',
+			'./assets/Texture/Day/negy.png',
+			'./assets/Texture/Day/posz.png',
+			'./assets/Texture/Day/negz.png',
+		]);
+		NightTexture = TextureLoader.load([
+			'./assets/Texture/Night/posx.png',
+			'./assets/Texture/Night/negx.png',
+			'./assets/Texture/Night/posy.png',
+			'./assets/Texture/Night/negy.png',
+			'./assets/Texture/Night/posz.png',
+			'./assets/Texture/Night/negz.png',
+		]);
+		DayTexture.encoding = THREE.sRGBEncoding;
+		NightTexture.encoding = THREE.sRGBEncoding;
+	}
 	//----------------------------WORLD CAMERA CONTROLS----------------------------------
 	{
 		CAMERA_STRUCT.world_camera.position.set( -1000, 1000, 0 );
@@ -117,7 +119,7 @@ function init() {
 
 	//--------------------PLANE---------------------------------------
 	{
-		loader.load( '/assets/mesh/scene/scene.obj', function ( obj ) {
+		loader.load( './assets/mesh/scene/scene.obj', function ( obj ) {
 			scenery = obj;
 			scene.add(scenery)
 			scenery_loaded = true;
@@ -134,7 +136,7 @@ function init() {
 				let x = -750 + i*200
 				let z = -200*j;
 				let object;
-				loader.load( '../assets/mesh/street-lamp-1/street-lamp.obj', function ( obj ) {
+				loader.load( './assets/mesh/street-lamp-1/street-lamp.obj', function ( obj ) {
 
 					object = obj;
 					
@@ -194,10 +196,8 @@ function init() {
 		CAMERA_STRUCT.drone_camera.lookAt(cube.position.x, cube.position.y, cube.position.z); //Order of calling position, lookat relatively, matters
 		scene.add(CAMERA_STRUCT.drone_camera); //Making the drone Player's children, so that it can move along with the player
 		scene.add(cube);
-	}
-	
-	//---------------------------------------PLAYER CONTROLS-------------------------------------
-	{
+
+		//---------------------------------------PLAYER CONTROLS-------------------------------------
 		var params = {
 			fpcamera: CAMERA_STRUCT.fp_camera,
 			thirdcamera: CAMERA_STRUCT.drone_camera,
@@ -219,9 +219,25 @@ function init() {
 		followLight.angle = Math.PI/100
 		
 
-		fp_controls = new PersonController(params, followLight);
+		player_controls = new PersonController(params, followLight);
 		
-
+		//---------------------------------------Bounding Box initialise----------------------------------
+		PlayerBBox = new THREE.Box3();
+		PlayerBBoxHelper = new THREE.Box3Helper(PlayerBBox, 0xffff00);
+		// scene.add(PlayerBBoxHelper);
+		// scene.add(PlayerBBox);
+		//------------------------------------DUMMY OBJECT FOR TRIAL--------------------------------------
+		let dabba_mesh = new THREE.BoxGeometry(50,50,50);
+		const material = new THREE.MeshBasicMaterial( {color: 0x00ff00} );
+		dabba = new THREE.Mesh(dabba_mesh, material);
+		scene.add(dabba);
+		dabba.position.y = 25;
+		dabba.position.x = 200;
+		dabba.position.z = 50;
+		dabbaBBox = new THREE.Box3();
+		dabbaBBoxHelper = new THREE.Box3Helper(dabbaBBox, 0x00ffff);
+		scene.add(dabbaBBoxHelper);
+		// scene.add(dabbaBBox);
 	}
 	//---------------------------------------SCENE LIGHT-----------------------------------------
 	{
@@ -257,6 +273,27 @@ function init() {
 	scene.add( axesHelper );	
 }
 //-------------------------------------------------------------------------------------------------------------------------
+function checkCollisions()
+{
+	if(player_controls.getObject() == null)
+	{
+		return;
+	}
+	dabbaBBox.setFromObject(dabba); //Send the BBox of the objects after applying the matrix operation. 
+	let bbox = player_controls.getBoundingBox();
+	let centerdabba = new THREE.Vector3();
+	dabbaBBox.getCenter(centerdabba);
+	if(bbox.intersectsBox(dabbaBBox))
+	{
+		player_controls.intersectingObject(true,centerdabba);
+	}
+	else
+	{
+		player_controls.intersectingObject(false);
+	}
+	let bboxhelper = new THREE.Box3Helper(bbox, 0xaabbcc);
+	scene.add(bboxhelper);
+}
 
 //---------------------------------------EVENT HANDLING--------------------------------------------------------------------
 window.addEventListener("keydown", (ev) => {
@@ -312,21 +349,22 @@ function animate()
 	if(CURRENT_VIEW == 0)
 	{
 		world_controls.enabled = true;
-		fp_controls.enabled = true;
+		player_controls.enabled = true;
 		render();
 	}
 	else if(CURRENT_VIEW == 1)
 	{
 		world_controls.enabled = false;
-		fp_controls.enabled = true;
+		player_controls.enabled = true;
 		render();
 	}
 	else
 	{
 		world_controls.enabled = false;
-		fp_controls.enabled = true;
+		player_controls.enabled = true;
 		render();
 	}
+	checkCollisions();
 	requestAnimationFrame((t) => {
 		if(previousRAF === null)
 		{
@@ -342,7 +380,7 @@ function step(timeElapsed)
 {
 	const timeElapsedS = timeElapsed* 0.001;
 
-	fp_controls.Update(timeElapsedS);
+	player_controls.Update(timeElapsedS);
 	world_controls.update(timeElapsedS);
 	stats.update(timeElapsedS);
 }
