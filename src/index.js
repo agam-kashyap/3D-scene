@@ -3,6 +3,9 @@ import { OrbitControls } from 'https://unpkg.com/three@0.127.0/examples/jsm/cont
 import { OBJLoader } from 'https://unpkg.com/three@0.127.0/examples/jsm/loaders/OBJLoader.js';
 import Stats from 'https://unpkg.com/three@0.127.0/examples/jsm/libs/stats.module.js';
 import { PersonController } from './World/Components/Controls/FirstPersonControl.js';
+import {car} from './World/Components/CarAnimation/car.js';
+import {CarMovement} from './World/Components/CarAnimation/carMovement.js';
+import {GLTFLoader} from 'https://unpkg.com/three@0.127.0/examples/jsm/loaders/GLTFLoader.js';
 //------------------------GLOBAL VARIABLES-------------------------------------
 var world_controls, 
 	player_controls, 
@@ -14,7 +17,11 @@ var world_controls,
 	DayTexture,
 	NightTexture,
 	DayDirLight,
-	NightDirLight;
+	NightDirLight,
+	LeaderCarMovement,
+	ChildCarMovement,
+	LeaderCarBool,
+	ChildCarBool;
 
 var CAMERA_STRUCT = 
 {
@@ -58,7 +65,9 @@ const loadingManager = new THREE.LoadingManager( () =>
 	loadingScreen.classList.add( 'fade-out' );
 	loadingScreen.addEventListener( 'transitionend', onTransitionEnd );		
 });
+
 const loader = new OBJLoader(loadingManager);
+const SceneLoader = new GLTFLoader(loadingManager);
 
 //---------------------------------INIT BEGINS---------------------------------------------
 function init() {
@@ -239,6 +248,68 @@ function init() {
 		scene.add(dabbaBBoxHelper);
 		// scene.add(dabbaBBox);
 	}
+	// -------------------------------- Adding Cars in Scene --------------------------
+	{
+		
+		var LeaderCar = null
+		SceneLoader.load('./assets/mesh/car.glb', (gltf) => {
+			const path = [
+				new THREE.Vector3(0,0,100),
+				new THREE.Vector3(800,0,100),
+				new THREE.Vector3(800,0,-100),
+				new THREE.Vector3(0,0,-100),
+				new THREE.Vector3(-800,0,-100),
+				new THREE.Vector3(-800,0,100),
+				new THREE.Vector3(0,0,100)
+			];
+			
+			console.log("object found ",gltf)
+			LeaderCar = gltf.scene;
+			LeaderCar.scale.set(10,10,10)
+			scene.add(LeaderCar);
+			LeaderCar.rotation.x = -Math.PI / 2;
+			LeaderCar.rotation.z = Math.PI;
+			LeaderCar.rotation.y = 2 * Math.PI;
+			
+			
+			// LeaderCar.position.set(0,0,0);
+			console.log("Leader Car",LeaderCar);
+			LeaderCarMovement = new CarMovement({
+				car: LeaderCar, 
+				track: path
+			})
+			const geometry = new THREE.BufferGeometry().setFromPoints(LeaderCarMovement.track);
+			const line = new THREE.Line( geometry,new THREE.MeshStandardMaterial({
+				color: 0xFFFFFF,
+				}));  
+			
+			SceneLoader.load('./assets/mesh/car.glb', (gltf2) => {
+		
+				scene.add(line)
+				
+				const ChildCar = gltf2.scene;
+				ChildCar.rotation.x = -Math.PI / 2;
+				ChildCar.rotation.z = Math.PI;
+			
+				ChildCar.scale.set(10,10,10)
+				// ChildCar.position.set(-100,0,100);
+				console.log("Leader Car",LeaderCar);
+				ChildCarMovement = new CarMovement({
+					car: ChildCar, 
+					track: null
+				})
+				// ChildCarMovement.enableDebug  = false;
+				ChildCarMovement.follow(LeaderCar)
+				ChildCarMovement.loop = false;
+				
+				ChildCarBool = true;
+				scene.add(ChildCar);
+			});
+		});
+		
+		
+
+	}
 	//---------------------------------------SCENE LIGHT-----------------------------------------
 	{
 		NightDirLight = new THREE.DirectionalLight( 0x210021 ); //Simulating night scene for now
@@ -390,6 +461,12 @@ function step(timeElapsed)
 
 	player_controls.Update(timeElapsedS);
 	world_controls.update(timeElapsedS);
+	if(LeaderCarMovement) {
+		LeaderCarMovement.update();
+	}
+	if(ChildCarMovement) {
+		ChildCarMovement.update();
+	}
 	stats.update(timeElapsedS);
 }
 function render() 
