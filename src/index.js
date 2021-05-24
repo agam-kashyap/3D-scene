@@ -160,7 +160,7 @@ function init() {
 					spotLight.distance = 1000;
 					spotLight.intensity = 1;
 
-					spotLight.name = "Light".concat(toString(objcnt));
+					spotLight.name = "Light" + objcnt;
 
 					const sphere = new THREE.SphereGeometry( 50, 16, 8 );
 					spotLight.add(new THREE.Mesh(sphere, new THREE.MeshBasicMaterial( { color: 0xffe692 })));
@@ -305,7 +305,6 @@ window.addEventListener("keydown", (ev) => {
 	if(ev.key == 'n')
 	{
 		day = !day;
-		console.log(!day);
 	}
 });
 //------------------------------------------------------------------------------------------------------------------------
@@ -337,6 +336,15 @@ function animate()
 		scene.add(DayDirLight);
 		scene.remove(NightDirLight);
 		followLight.color = new THREE.Color(1,0,0);
+		let tempCnt = 1;
+		for(let j = 1; j>-2; j=j-2)
+		{
+			for (let i = 0; i < 9; i ++ ) {
+				let name = "Light".concat(tempCnt);
+				scene.getObjectByName(name).intensity = 0.2;
+				tempCnt += 1;
+			}
+		}
 	}
 	else
 	{
