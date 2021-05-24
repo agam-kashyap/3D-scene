@@ -31,24 +31,14 @@ export class CarMovement {
 
 
     update(timeInSeconds) {
-        // console.log(this.track,this.tofollow)
         if(this.track != null && this.tofollow == null) {
-            // console.log("here track",this.car.name)
             this.move(this.track);
         }
         else {
-            // console.log("here")
             if(this.tofollow) {
-                // this.tofollow.attach(this.car)
-                
-                // console.log("here:")
-                // if(this.bufferPoints == []) {
-                //     if(this.bufferPoints.length < )
-                // }
                 if(this.bufferFollow) {
 
                     if(this.bufferPoints.length < 300) {
-                        // console.log(this.bufferPoints)
                         var position = new THREE.Vector3(0,0,0);
                         position.copy(this.tofollow.position)
                         this.bufferPoints.push(position)
@@ -61,10 +51,7 @@ export class CarMovement {
                         
                         this.move(this.track)
                         
-                        // console.log(this.bufferPoints.length,this.car.position,this.bufferPoints[0])
                         this.bufferPoints.shift()
-                        // console.log(this.bufferPoints.length,this.bufferPoints[0])
-                        // console.log(this.bufferPoints)
                     }
                 }
                 else {
@@ -93,7 +80,7 @@ export class CarMovement {
             
             var CurrentMove = new THREE.Vector3(0,0,0);
             var NextMove = new THREE.Vector3(0,0,0);
-            // var forward = new THREE.Vector3(0, 1, 0);
+            
             var angle = 0;
             var distance = 0;
             var sign = 1;
@@ -106,7 +93,6 @@ export class CarMovement {
     
                     const forward = new THREE.Vector3(1, 0, 0);
                     forward.applyQuaternion(controlObject.quaternion);
-                    // forward.applyAxisAngle(new THREE.Vector3(0, 0, 1), Math.PI / 2);
                     forward.normalize();
                     
                     angle = forward.angleTo(NextMove)
@@ -117,15 +103,10 @@ export class CarMovement {
                     else {
                         sign = temp.y / Math.abs(temp.y) 
                     }
-                    // if(this.enableDebug) {
-                    //     console.log(sign);
-                    // }
                 }
                 var newPosition = track[this.currentPoint];
                     
                 if(Math.abs(angle) < Math.PI / 40) {
-                    // console.log("its coming in this if statement")
-                    // console.log(this.currentPoint,track[this.currentPoint])
                     newPosition = track[this.currentPoint];
                     this.car.position.copy( newPosition );
                     this.currentPoint += 1
@@ -137,68 +118,28 @@ export class CarMovement {
                     _Q.setFromAxisAngle(_A, 4 * sign * Math.PI * 0.01);
                     _R.multiply(_Q);
                 }
-                // this.car.lookAt(newPosition)
-                
-                // console.log(NextMove,forward,angle);
-                // if(this.enableDebug) {
-                //     console.log(angle);
-                // }
-
-                // else {
-                //     _A.set(0, 0, 1);
-                // // _Q.setFromAxisAngle(_A, 4.0 * -Math.PI * timeInSeconds * this._acceleration.y);
-                // // _R.multiply(_Q);
-                // }
             }
             else {
                 this.currentPoint = 0
             }
                 
-                // // Forward Movement
-                // if(moveVector.x > 10) {
-                //     velocity.x += moveVector.x * 0.001 ;
-                // }
-                // // Backward Movement
-                // // velocity.x -= acc.x * timeInSeconds;
+            controlObject.quaternion.copy(_R);
+            
+            const oldPosition = new THREE.Vector3();
+            oldPosition.copy(controlObject.position);
                 
-                // // Rotate Left
-                // if(moveVector.y > 10) {
-                //     _A.set(0, 0, 1);
-                //     _Q.setFromAxisAngle(_A, Math.PI * moveVector.y * 0.0001);
-                //     _R.multiply(_Q);
-                    
-                // }
-                // // Rotate Right
-                // // _A.set(0, 0, 1);
-                // // _Q.setFromAxisAngle(_A, 4.0 * -Math.PI * timeInSeconds * this._acceleration.y);
-                // // _R.multiply(_Q);
-                
-                controlObject.quaternion.copy(_R);
-                
-                const oldPosition = new THREE.Vector3();
-                oldPosition.copy(controlObject.position);
-                    
-                const forward = new THREE.Vector3(0, 0, 1);
-                forward.applyQuaternion(controlObject.quaternion);
-                forward.normalize();
-                
-                const sideways = new THREE.Vector3(1, 0, 0);
-                sideways.applyQuaternion(controlObject.quaternion);
-                sideways.normalize();
-                
-                sideways.multiplyScalar(velocity.x * 0.01);
-                forward.multiplyScalar(velocity.z * 0.01);
-                
-                controlObject.position.add(forward);
-                controlObject.position.add(sideways);
-                
-                // oldPosition.copy(controlObject.position);
-        // console.log(this.car)
-    }
-
+            const forward = new THREE.Vector3(0, 0, 1);
+            forward.applyQuaternion(controlObject.quaternion);
+            forward.normalize();
+            
+            const sideways = new THREE.Vector3(1, 0, 0);
+            sideways.applyQuaternion(controlObject.quaternion);
+            sideways.normalize();
+            
+            sideways.multiplyScalar(velocity.x * 0.01);
+            forward.multiplyScalar(velocity.z * 0.01);
+            
+            controlObject.position.add(forward);
+            controlObject.position.add(sideways);
+        }
 }
-
-// console.log(new CarMovement({
-//     pos : new THREE.Vector3(0,0,0),
-//     track: null}
-//     ))
