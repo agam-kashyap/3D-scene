@@ -3,8 +3,8 @@ import { OrbitControls } from 'https://unpkg.com/three@0.127.0/examples/jsm/cont
 import { OBJLoader } from 'https://unpkg.com/three@0.127.0/examples/jsm/loaders/OBJLoader.js';
 import Stats from 'https://unpkg.com/three@0.127.0/examples/jsm/libs/stats.module.js';
 import { PersonController } from './World/Components/Controls/FirstPersonControl.js';
+import { CarMovement } from './World/Components/CarAnimation/CarMovement.js';
 import {GLTFLoader} from 'https://unpkg.com/three@0.127.0/examples/jsm/loaders/GLTFLoader.js';
-
 //------------------------GLOBAL VARIABLES-------------------------------------
 var world_controls, 
 	player_controls, 
@@ -16,7 +16,11 @@ var world_controls,
 	DayTexture,
 	NightTexture,
 	DayDirLight,
-	NightDirLight;
+	NightDirLight,
+	LeaderCarMovement,
+	ChildCarMovement,
+	LeaderCarBool,
+	ChildCarBool;
 
 var CAMERA_STRUCT = 
 {
@@ -34,7 +38,8 @@ var base_position
 var previousRAF = null,
 	followLight,
 	PlayerBBox, PlayerBBoxHelper,
-	dabbaBBox, dabba, dabbaBBoxHelper;
+	LeaderBBox = new THREE.Box3(), 
+	ChildBBox = new THREE.Box3(), dabba, dabbaBBoxHelper;
 /*
 init() used to setup all the assets of the scene,  setup controls, cameras and textures.
 Provides a loading manager, shown during loading of all assets
@@ -60,7 +65,9 @@ const loadingManager = new THREE.LoadingManager( () =>
 	loadingScreen.classList.add( 'fade-out' );
 	loadingScreen.addEventListener( 'transitionend', onTransitionEnd );		
 });
+
 const loader = new OBJLoader(loadingManager);
+const SceneLoader = new GLTFLoader(loadingManager);
 
 //---------------------------------INIT BEGINS---------------------------------------------
 function init() {
@@ -127,7 +134,6 @@ function init() {
 		// 	scenery_loaded = true;
 		// });
 
-		const SceneLoader = new GLTFLoader(loadingManager);
 		SceneLoader.load('./assets/mesh/scene/scenery.glb', (gltf) => {
 			scene.add(gltf.scene);
 			scenery_loaded = true;
@@ -235,17 +241,79 @@ function init() {
 		// scene.add(PlayerBBoxHelper);
 		// scene.add(PlayerBBox);
 		//------------------------------------DUMMY OBJECT FOR TRIAL--------------------------------------
-		let dabba_mesh = new THREE.BoxGeometry(50,50,50);
-		const material = new THREE.MeshBasicMaterial( {color: 0x00ff00} );
-		dabba = new THREE.Mesh(dabba_mesh, material);
-		scene.add(dabba);
-		dabba.position.y = 25;
-		dabba.position.x = 200;
-		dabba.position.z = 50;
-		dabbaBBox = new THREE.Box3();
-		dabbaBBoxHelper = new THREE.Box3Helper(dabbaBBox, 0x00ffff);
-		scene.add(dabbaBBoxHelper);
+		// let dabba_mesh = new THREE.BoxGeometry(50,50,50);
+		// const material = new THREE.MeshBasicMaterial( {color: 0x00ff00} );
+		// dabba = new THREE.Mesh(dabba_mesh, material);
+		// scene.add(dabba);
+		// dabba.position.y = 25;
+		// dabba.position.x = 200;
+		// dabba.position.z = 50;
+		// dabbaBBox = new THREE.Box3();
+		// dabbaBBoxHelper = new THREE.Box3Helper(dabbaBBox, 0x00ffff);
+		// scene.add(dabbaBBoxHelper);
 		// scene.add(dabbaBBox);
+	}
+	// -------------------------------- Adding Cars in Scene --------------------------
+	{
+		
+		var LeaderCar = null
+		SceneLoader.load('./assets/mesh/car.glb', (gltf) => {
+			const path = [
+				new THREE.Vector3(0,0,100),
+				new THREE.Vector3(800,0,100),
+				new THREE.Vector3(800,0,-100),
+				new THREE.Vector3(0,0,-100),
+				new THREE.Vector3(-800,0,-100),
+				new THREE.Vector3(-800,0,100),
+				new THREE.Vector3(0,0,100)
+			];
+			
+			console.log("object found ",gltf)
+			LeaderCar = gltf.scene;
+			LeaderCar.scale.set(25,25,25);
+			scene.add(LeaderCar);
+			LeaderCar.rotation.x = -Math.PI / 2;
+			LeaderCar.rotation.z = Math.PI;
+			LeaderCar.rotation.y = 2 * Math.PI;
+			
+			console.log("Leader Car",LeaderCar);
+			LeaderCarMovement = new CarMovement({
+				car: LeaderCar, 
+				track: path
+			})
+			const geometry = new THREE.BufferGeometry().setFromPoints(LeaderCarMovement.track);
+			const line = new THREE.Line( geometry,new THREE.MeshStandardMaterial({
+				color: 0xFFFFFF,
+				}));  
+			
+			SceneLoader.load('./assets/mesh/car.glb', (gltf2) => {
+		
+				scene.add(line)
+				
+				const ChildCar = gltf2.scene;
+				ChildCar.rotation.x = -Math.PI / 2;
+				ChildCar.rotation.z = Math.PI;
+			
+				ChildCar.scale.set(25,25,25)
+				// ChildCar.position.set(-100,0,100);
+				console.log("Leader Car",LeaderCar);
+				ChildCarMovement = new CarMovement({
+					car: ChildCar, 
+					track: null
+				})
+				// ChildCarMovement.enableDebug  = false;
+				ChildCarMovement.follow(LeaderCar)
+				ChildCarMovement.loop = false;
+				
+				ChildCarBool = true;
+				scene.add(ChildCar);
+			});
+			LeaderCarBool = true;
+
+		});
+		
+		
+
 	}
 	//---------------------------------------SCENE LIGHT-----------------------------------------
 	{
@@ -283,17 +351,31 @@ function init() {
 //-------------------------------------------------------------------------------------------------------------------------
 function checkCollisions()
 {
-	if(player_controls.getObject() == null)
+	if(player_controls.getObject() == null || !LeaderCarBool || !ChildCarBool)
 	{
 		return;
 	}
-	dabbaBBox.setFromObject(dabba); //Send the BBox of the objects after applying the matrix operation. 
+	debugger;
+	LeaderBBox.setFromObject(LeaderCarMovement.car); //Send the BBox of the objects after applying the matrix operation. 
+	
 	let bbox = player_controls.getBoundingBox();
-	let centerdabba = new THREE.Vector3();
-	dabbaBBox.getCenter(centerdabba);
-	if(bbox.intersectsBox(dabbaBBox))
+	let centerLeader = new THREE.Vector3();
+	LeaderBBox.getCenter(centerLeader);
+	if(bbox.intersectsBox(LeaderBBox))
 	{
-		player_controls.intersectingObject(true,dabbaBBox);
+		player_controls.intersectingObject(true,LeaderBBox);
+	}
+	else
+	{
+		player_controls.intersectingObject(false);
+	}
+
+	ChildBBox.setFromObject(ChildCarMovement.car);
+	let centerChild = new THREE.Vector3();
+	ChildBBox.getCenter(centerChild);
+	if(bbox.intersectsBox(ChildBBox))
+	{
+		player_controls.intersectingObject(true,ChildBBox);
 	}
 	else
 	{
@@ -406,6 +488,12 @@ function step(timeElapsed)
 
 	player_controls.Update(timeElapsedS);
 	world_controls.update(timeElapsedS);
+	if(LeaderCarMovement) {
+		LeaderCarMovement.update();
+	}
+	if(ChildCarMovement) {
+		ChildCarMovement.update();
+	}
 	stats.update(timeElapsedS);
 }
 function render() 
