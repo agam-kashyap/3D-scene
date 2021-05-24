@@ -285,14 +285,14 @@ function checkCollisions()
 	dabbaBBox.getCenter(centerdabba);
 	if(bbox.intersectsBox(dabbaBBox))
 	{
-		player_controls.intersectingObject(true,centerdabba);
+		player_controls.intersectingObject(true,dabbaBBox);
 	}
 	else
 	{
 		player_controls.intersectingObject(false);
 	}
-	let bboxhelper = new THREE.Box3Helper(bbox, 0xaabbcc);
-	scene.add(bboxhelper);
+	// let bboxhelper = new THREE.Box3Helper(bbox, 0xaabbcc);
+	// scene.add(bboxhelper);
 }
 
 //---------------------------------------EVENT HANDLING--------------------------------------------------------------------

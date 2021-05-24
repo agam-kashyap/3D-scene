@@ -48,6 +48,8 @@ export class PersonController {
         //----------------------__TRIALLLL__-------------------------
         this._boundingBox = new THREE.Box3();
         this.isIntersecting = false;
+        this.intersectingObjectCenter = new THREE.Vector3();
+        this.basePos = 1;
     }
     _LoadModels() {
         // initializing an FBX loader
@@ -167,13 +169,34 @@ export class PersonController {
         let allowMove = true;
         if(this.isIntersecting)
         {
-            if(this.canMove(this.intersectingObjectCenter,this.getBBoxCenter(), _objDirection))
+            if(this.canMove(this.intersectingObjectCenter,this.getBBoxCenter(), _objDirection) || this.ContactObjectBBox.max.y <= this.getBBoxLimits().y + 2)
             {
                 allowMove = true;
             }
             else
             {
                 allowMove = false;
+            }
+
+            if(this.isJumping)
+            {
+                if(this.ContactObjectBBox.max.y >= controlObject.position.y - 4 && this.ContactObjectBBox.max.y <= controlObject.position.y + 1)
+                {
+                    this.basePos = this.ContactObjectBBox.max.y;
+                    this.isJumping = false;
+                    this._jumpAngle = 0;
+                }
+            }
+        }
+        else
+        {
+            if(controlObject.position.y >= this.basePos - 4 && controlObject.position.y <= this.basePos + 1)
+            {
+                this.basePos = 1;
+            }
+            if(!this.isJumping && controlObject.position.y > this.basePos)
+            {
+                controlObject.position.y -= 4;
             }
         }
 
@@ -208,8 +231,8 @@ export class PersonController {
             this.isJumping = true;
             const upward = new THREE.Vector3(0,1,0)
             this._jumpAngle += 0.25;
-            upward.y = (Math.sin(this._jumpAngle) + 1)*40;
-            if(upward.y < 1)
+            upward.y = (Math.sin(this._jumpAngle) + 1)*40 + 0.9*this.basePos;
+            if(upward.y < this.basePos)
             {
                 this.isJumping = false;
             }
@@ -256,7 +279,6 @@ export class PersonController {
         Vec1.normalize();
         Vec2.normalize();
         let temp = Vec1.dot(Vec2);
-        console.log(temp);
         if(temp < 0)
         {
             return true;
@@ -267,10 +289,17 @@ export class PersonController {
         }
     }
 
-    intersectingObject(bool, Center1=null)
+    // intersectingObject(bool, Center1=null)
+    // {
+    //     this.isIntersecting = bool;
+    //     this.intersectingObjectCenter = Center1;
+    // }
+    intersectingObject(bool, BBox=null)
     {
         this.isIntersecting = bool;
-        this.intersectingObjectCenter = Center1;
+        if(BBox == null) return;
+        this.ContactObjectBBox = BBox.clone();
+        this.ContactObjectBBox.getCenter(this.intersectingObjectCenter);
     }
 
     getObject()
@@ -292,6 +321,13 @@ export class PersonController {
         let step4 = new THREE.Vector3();
         step3.getCenter(step4)
         return step4;
+    }
+    getBBoxLimits()
+    {
+        let step1 = this._boundingBox.clone();
+        let step2 = this._target.matrixWorld;
+        let step3 = step1.applyMatrix4(this._target.matrixWorld);
+        return step3.min;
     }
 }
 
