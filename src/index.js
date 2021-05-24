@@ -20,7 +20,8 @@ var world_controls,
 	LeaderCarMovement,
 	ChildCarMovement,
 	LeaderCarBool,
-	ChildCarBool;
+	ChildCarBool,
+	isIntersecting = false;
 
 var CAMERA_STRUCT = 
 {
@@ -275,6 +276,7 @@ function init() {
 			LeaderCar.rotation.x = -Math.PI / 2;
 			LeaderCar.rotation.z = Math.PI;
 			LeaderCar.rotation.y = 2 * Math.PI;
+			// LeaderCar.position.y += 50;
 			
 			console.log("Leader Car",LeaderCar);
 			LeaderCarMovement = new CarMovement({
@@ -351,6 +353,7 @@ function init() {
 //-------------------------------------------------------------------------------------------------------------------------
 function checkCollisions()
 {
+	let cnt = 0;
 	if(player_controls.getObject() == null || !LeaderCarBool || !ChildCarBool)
 	{
 		return;
@@ -362,11 +365,12 @@ function checkCollisions()
 	dabbaBBox.getCenter(centerdabba);
 	if(bbox.intersectsBox(dabbaBBox))
 	{
+		cnt += 1;
 		player_controls.intersectingObject(true,dabbaBBox);
 	}
 	else
 	{
-		player_controls.intersectingObject(false);
+		if(cnt == 0) player_controls.intersectingObject(false);
 	}
 
 
@@ -377,11 +381,13 @@ function checkCollisions()
 	LeaderBBox.getCenter(centerLeader);
 	if(bbox.intersectsBox(LeaderBBox))
 	{
+		cnt += 1;
+		isIntersecting = true;
 		player_controls.intersectingObject(true,LeaderBBox);
 	}
 	else
 	{
-		player_controls.intersectingObject(false);
+		if(cnt == 0) player_controls.intersectingObject(false);
 	}
 
 	ChildBBox.setFromObject(ChildCarMovement.car);
@@ -389,11 +395,12 @@ function checkCollisions()
 	ChildBBox.getCenter(centerChild);
 	if(bbox.intersectsBox(ChildBBox))
 	{
+		cnt += 1;
 		player_controls.intersectingObject(true,ChildBBox);
 	}
 	else
 	{
-		player_controls.intersectingObject(false);
+		if(cnt == 0) player_controls.intersectingObject(false);
 	}
 }
 
