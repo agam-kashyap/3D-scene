@@ -3,6 +3,8 @@ import { OrbitControls } from 'https://unpkg.com/three@0.127.0/examples/jsm/cont
 import { OBJLoader } from 'https://unpkg.com/three@0.127.0/examples/jsm/loaders/OBJLoader.js';
 import Stats from 'https://unpkg.com/three@0.127.0/examples/jsm/libs/stats.module.js';
 import { PersonController } from './World/Components/Controls/FirstPersonControl.js';
+import {GLTFLoader} from 'https://unpkg.com/three@0.127.0/examples/jsm/loaders/GLTFLoader.js';
+
 //------------------------GLOBAL VARIABLES-------------------------------------
 var world_controls, 
 	player_controls, 
@@ -117,11 +119,17 @@ function init() {
 		}
 	}
 
-	//--------------------PLANE---------------------------------------
+	//--------------------SCENERY---------------------------------------
 	{
-		loader.load( './assets/mesh/scene/scene.obj', function ( obj ) {
-			scenery = obj;
-			scene.add(scenery)
+		// loader.load( './assets/mesh/scene/scene.obj', function ( obj ) {
+		// 	scenery = obj;
+		// 	scene.add(scenery)
+		// 	scenery_loaded = true;
+		// });
+
+		const SceneLoader = new GLTFLoader(loadingManager);
+		SceneLoader.load('./assets/mesh/scene/scenery.glb', (gltf) => {
+			scene.add(gltf.scene);
 			scenery_loaded = true;
 		});
 	}
@@ -158,7 +166,7 @@ function init() {
 					spotLight.penumbra = 0.5;
 					spotLight.decay = 2;
 					spotLight.distance = 1000;
-					spotLight.intensity = 1;
+					spotLight.intensity = 10;
 
 					spotLight.name = "Light" + objcnt;
 
@@ -213,7 +221,7 @@ function init() {
 		followLight = new THREE.SpotLight(0xffffff);
 		const trackLightMesh = new THREE.SphereGeometry(30,10,10);
 		followLight.add(new THREE.Mesh(trackLightMesh, new THREE.MeshBasicMaterial({ color: 0xffffff})));
-		console.log(followLight);
+		followLight.intensity = 10;
 		followLight.position.set(-440,750,283);
 		scene.add(followLight);
 		followLight.angle = Math.PI/100
@@ -291,8 +299,6 @@ function checkCollisions()
 	{
 		player_controls.intersectingObject(false);
 	}
-	// let bboxhelper = new THREE.Box3Helper(bbox, 0xaabbcc);
-	// scene.add(bboxhelper);
 }
 
 //---------------------------------------EVENT HANDLING--------------------------------------------------------------------
@@ -341,7 +347,7 @@ function animate()
 		{
 			for (let i = 0; i < 9; i ++ ) {
 				let name = "Light".concat(tempCnt);
-				scene.getObjectByName(name).intensity = 0.2;
+				scene.getObjectByName(name).intensity = 2;
 				tempCnt += 1;
 			}
 		}
@@ -352,6 +358,16 @@ function animate()
 		scene.add(NightDirLight);
 		scene.remove(DayDirLight);
 		followLight.color = new THREE.Color(1,1,1);
+		let tempCnt = 1;
+		for(let j = 1; j>-2; j=j-2)
+		{
+			for (let i = 0; i < 9; i ++ ) {
+				let name = "Light".concat(tempCnt);
+				if(scene.getObjectByName(name) == null)break;
+				scene.getObjectByName(name).intensity = 10;
+				tempCnt += 1;
+			}
+		}
 	}
 	// requestAnimationFrame( animate );
 	if(CURRENT_VIEW == 0)
