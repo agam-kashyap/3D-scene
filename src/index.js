@@ -275,8 +275,8 @@ function init() {
 			scene.add(LeaderCar);
 			LeaderCar.rotation.x = -Math.PI / 2;
 			LeaderCar.rotation.z = Math.PI;
-			LeaderCar.rotation.y = 2 * Math.PI;
-			// LeaderCar.position.y += 50;
+			// LeaderCar.rotation.y = 2 * Math.PI;
+			LeaderCar.position.z += 50;
 			
 			console.log("Leader Car",LeaderCar);
 			LeaderCarMovement = new CarMovement({
@@ -295,9 +295,9 @@ function init() {
 				const ChildCar = gltf2.scene;
 				ChildCar.rotation.x = -Math.PI / 2;
 				ChildCar.rotation.z = Math.PI;
-			
+
 				ChildCar.scale.set(25,25,25)
-				// ChildCar.position.set(-100,0,100);
+				ChildCar.position.set(-100,0,100);
 				console.log("Leader Car",LeaderCar);
 				ChildCarMovement = new CarMovement({
 					car: ChildCar, 
@@ -351,6 +351,7 @@ function init() {
 	scene.add( axesHelper );	
 }
 //-------------------------------------------------------------------------------------------------------------------------
+// let LeaderAttached = false;
 function checkCollisions()
 {
 	let cnt = 0;
@@ -384,6 +385,20 @@ function checkCollisions()
 		cnt += 1;
 		isIntersecting = true;
 		player_controls.intersectingObject(true,LeaderBBox);
+
+		// if(player_controls.isOnTop && !LeaderAttached)
+		// {
+		// 	scene.remove(scene.getObjectByName("Player1"));
+		// 	LeaderCarMovement.car.attach(player_controls._target);
+		// 	console.log("Here");
+		// 	LeaderAttached = true;
+		// }
+		// if(!player_controls.isOnTop && LeaderAttached)
+		// {
+		// 	LeaderCarMovement.car.remove(LeaderCarMovement.car.getObjectByName("Player1"));
+		// 	scene.add(player_controls._target);
+		// 	LeaderAttached = false;
+		// }
 	}
 	else
 	{
@@ -402,6 +417,7 @@ function checkCollisions()
 	{
 		if(cnt == 0) player_controls.intersectingObject(false);
 	}
+
 }
 
 //---------------------------------------EVENT HANDLING--------------------------------------------------------------------

@@ -32,7 +32,7 @@ export class PersonController {
 
         this._lookspeed = 0.001;
         this._decceleration = new THREE.Vector3(-0.5, -0.01, -50.0);
-        this._acceleration = new THREE.Vector3(100, 0.05, 500.0);
+        this._acceleration = new THREE.Vector3(500, 0.05, 1000.0);
         this._velocity = new THREE.Vector3(0, 0, 0);
         this._input = new BasicCharacterControllerInput(this._params);
         this._stateMachine = new CharechterFSM(new BasicCharacterControllerProxy(this._animations))
@@ -50,6 +50,7 @@ export class PersonController {
         this.isIntersecting = false;
         this.intersectingObjectCenter = new THREE.Vector3();
         this.basePos = 1;
+        this.isOnTop = false;
     }
     _LoadModels() {
         // initializing an FBX loader
@@ -66,6 +67,7 @@ export class PersonController {
 
                 console.log("object",fbx)
                 this._target = fbx
+                this._target.name = "Player1";
                 console.log(fbx)
 
                 ///////////////////////////////////////////////
@@ -79,7 +81,7 @@ export class PersonController {
                 // Dummy object
                 this.tofollow = this._target.getObjectByName('mixamorigHead').add(new THREE.SphereGeometry(0,0,0));
 
-                this._params.scene.add(fbx);
+                this._params.scene.add(this._target);
 
                 this._mixer = new THREE.AnimationMixer(this._target)
 
@@ -198,6 +200,16 @@ export class PersonController {
             {
                 controlObject.position.y -= 4;
             }
+        }
+
+        if(this.basePos != 1)
+        {
+            this.isOnTop = true;
+            console.log("onTop");
+        }
+        else
+        {
+            this.isOnTop = false;
         }
 
         if(allowMove)

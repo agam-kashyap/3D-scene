@@ -39,7 +39,7 @@ export class CarMovement {
                 if(this.bufferFollow) {
 
                     if(this.bufferPoints.length < 300) {
-                        var position = new THREE.Vector3(0,0,0);
+                        var position = new THREE.Vector3(0,0,100);
                         position.copy(this.tofollow.position)
                         this.bufferPoints.push(position)
                         this.currentPoint = 1
